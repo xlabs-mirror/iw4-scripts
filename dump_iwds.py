@@ -15,8 +15,7 @@ def log(*args, **kwargs):
 
 def dump_iwd_files(src_dir, dest_dir):
     log("dest_dir",dest_dir)
-    f = 0
-    e = []
+    f = 0;e = []
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith(('.iwd', '.iwd.disabled')):
@@ -33,20 +32,20 @@ def dump_iwd_files(src_dir, dest_dir):
                         log("Extracting",src_path,"...")
                         zfile.extractall(dest_dir)
                 except Exception as ex:
-                    e.append(ex)
-                    log(ex)
-    print("Extracted", files, "files with", errors, "errors.")
-    return files, errors
+                    e.append((file, ex))
+                    log((file,ex))
+    print("Extracted", f, "files with", e, "errors.")
+    return f, e
 
 if __name__ == "__main__":
     dest_folder = "G:/CoD 6 (Dump)/"
     f = 0;e = []
-    files, errors = dump_iwd_files("S:/Call of Duty/CoD 6 (MW2)", dest_folder)
-    f += files;e += errors
-    files, errors = dump_iwd_files("S:/Call of Duty/CoD 6 (Steam)", dest_folder)
-    f += files;e += errors
-    files, errors = dump_iwd_files("S:/Call of Duty/CoD 6 (Server)", dest_folder)
-    f += files;e += errors
+    _f, _e = dump_iwd_files("S:/Call of Duty/CoD 6 (MW2)", dest_folder)
+    f += _f;e += _e
+    _f, _e = dump_iwd_files("S:/Call of Duty/CoD 6 (Steam)", dest_folder)
+    f += _f;e += _e
+    _f, _e = dump_iwd_files("S:/Call of Duty/CoD 6 (Server)", dest_folder)
+    f += _f;e += _e
     log("Extracted", f, "files with", len(e), "errors.")
     pprint(e)
     input("Press Enter to exit...")
