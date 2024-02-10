@@ -10,10 +10,10 @@ from .player import Player
 
 @dataclass
 class Host:
-    admin: str
-    email: str
-    location: str
-    website: str
+    admin: str = ""
+    email: str = ""
+    location: str = ""
+    website: str = ""
 
     def toJSON(self):
         return dumps(self, default=lambda o: o.__dict__, 
@@ -21,16 +21,17 @@ class Host:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Host':
-        _admin = str(obj.get("admin"))
-        _email = str(obj.get("email"))
-        _location = str(obj.get("location"))
-        _website = str(obj.get("website"))
+        if obj is None: return Host()
+        _admin = str(obj.get("admin", None))
+        _email = str(obj.get("email", None))
+        _location = str(obj.get("location", None))
+        _website = str(obj.get("website", None))
         return Host(_admin, _email, _location, _website)
 
 @dataclass
 class MapRotation:
-    gametypes: List[str]
-    maps: List[str]
+    gametypes: list[str] = None
+    maps: list[str] = None
 
     def toJSON(self):
         return dumps(self, default=lambda o: o.__dict__, 
@@ -38,8 +39,9 @@ class MapRotation:
 
     @staticmethod
     def from_dict(obj: Any) -> 'MapRotation':
-        _gametypes = obj.get("gametypes")
-        _maps = obj.get("maps")
+        if obj is None: return MapRotation([], [])
+        _gametypes = obj.get("gametypes", [])
+        _maps = obj.get("maps", [])
         return MapRotation(_gametypes, _maps)
 
 @dataclass
@@ -78,27 +80,27 @@ class Status:
     @staticmethod
     def from_dict(obj: Any) -> 'Status':
         _sv_hostname = str(obj.get("sv_hostname"))
-        _matchtype = int(obj.get("matchtype"))
+        _matchtype = int(obj.get("matchtype")) if obj.get("matchtype") else None
         _g_gametype = str(obj.get("g_gametype"))
         _mapname = str(obj.get("mapname"))
         _aimAssist = bool(obj.get("aimAssist"))
         _g_hardcore = bool(obj.get("g_hardcore"))
         _isPrivate = bool(obj.get("isPrivate"))
         _scr_game_allowkillcam = bool(obj.get("scr_game_allowkillcam"))
-        _scr_team_fftype = int(obj.get("scr_team_fftype"))
+        _scr_team_fftype = int(obj.get("scr_team_fftype")) if obj.get("scr_team_fftype") else None
         _sv_allowAnonymous = bool(obj.get("sv_allowAnonymous"))
         _sv_allowClientConsole = bool(obj.get("sv_allowClientConsole"))
         _sv_floodProtect = bool(obj.get("sv_floodProtect"))
-        _sv_minPing = int(obj.get("sv_minPing"))
-        _sv_maxPing = int(obj.get("sv_maxPing"))
-        _sv_maxRate = int(obj.get("sv_maxRate"))
-        _sv_maxclients = int(obj.get("sv_maxclients"))
-        _sv_privateClients = int(obj.get("sv_privateClients"))
-        _sv_privateClientsForClients = int(obj.get("sv_privateClientsForClients"))
+        _sv_minPing = int(obj.get("sv_minPing")) if obj.get("sv_minPing") else None
+        _sv_maxPing = int(obj.get("sv_maxPing")) if obj.get("sv_maxPing") else None
+        _sv_maxRate = int(obj.get("sv_maxRate")) if obj.get("sv_maxRate") else None
+        _sv_maxclients = int(obj.get("sv_maxclients")) if obj.get("sv_maxclients") else None
+        _sv_privateClients = int(obj.get("sv_privateClients")) if obj.get("sv_privateClients") else None
+        _sv_privateClientsForClients = int(obj.get("sv_privateClientsForClients")) if obj.get("sv_privateClientsForClients") else None
         _sv_pure = bool(obj.get("sv_pure"))
-        _sv_securityLevel = int(obj.get("sv_securityLevel"))
+        _sv_securityLevel = int(obj.get("sv_securityLevel")) if obj.get("sv_securityLevel") else None
         _voiceChat = bool(obj.get("voiceChat"))
-        _protocol = int(obj.get("protocol"))
+        _protocol = int(obj.get("protocol")) if obj.get("protocol") else None
         _shortversion = str(obj.get("shortversion"))
         _version = str(obj.get("version"))
         _gamename = str(obj.get("gamename"))

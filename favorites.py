@@ -39,11 +39,14 @@ async def main():
 
     favourites_file.purge_duplicates()
     await favourites_file.purge_unreachable()
+    favourites_file.sort()
     favourites_file.save()
 
 if __name__ ==  '__main__':
     loop = get_event_loop()
     loop.run_until_complete(main())
+else:
+    logger.debug((__file__,"__name__=",__name__))
 
 # input("Press enter to exit...")
 logger.debug((__file__,"END"))

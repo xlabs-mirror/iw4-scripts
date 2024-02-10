@@ -168,6 +168,10 @@ class FavoritesFile:
             logging.info((f"Loaded {len(self.favorites)} favorites from {file}"))
             return self.favorites
         
+    def sort(self): # sort by ip+port but for example treat 101 higher than 2
+        self.favorites.sort(key=lambda x: (x.ipv4 or x.ipv6, x.port))
+        return self.favorites
+        
     def save(self, file: Path = None, newline: bool = False):
         if not file: file = self.path
         favs = [fav.to_str() for fav in self.favorites]
