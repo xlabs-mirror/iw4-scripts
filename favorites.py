@@ -20,7 +20,8 @@ logger.debug((__file__,"START"))
 
 async def main():
     # File path for the favourites.json file
-    favourites_file = FavoritesFile("G:/Steam/steamapps/common/Call of Duty Modern Warfare 2/players/favourites.json") # "S:/Call of Duty/CoD 6 (MW2)/players/favourites.json"
+    favourites_file = FavoritesFile("G:/Steam/steamapps/common/Call of Duty Modern Warfare 2/players/favourites.json") # "S:/Call of Duty/CoD 6 (MW2)/players/favourites.json"^
+    favourites_file.backup()
     await favourites_file.update_async(timeout=.2)
 
     online_servers = fetch_server_data()

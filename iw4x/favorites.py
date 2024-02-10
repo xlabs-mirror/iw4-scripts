@@ -180,6 +180,11 @@ class FavoritesFile:
             else: f.write(dumps(favs, indent=4))
             logging.info((f"Saved {len(self.favorites)} favorites to {file}"))
 
+    def backup(self, file: Path = None):
+        if not file: file = self.path.with_suffix(".bak")
+        self.save(file)
+        logging.info((f"Backed up {len(self.favorites)} favorites to {file}"))
+
     def toJSON(self):
         return dumps(self, default=lambda o: o.__dict__, 
             sort_keys=True, indent=4)
