@@ -118,8 +118,10 @@ class ServerInfoResponse:
             sort_keys=True, indent=4)
         
     def to_file(self, path: str) -> None:
-        with open(path, "w") as f:
-            f.write(self.to_json())
+        try: 
+            with open(path, "w") as f:
+                f.write(self.to_json())
+        except Exception as ex: error(f"Failed to write to file: {ex}")
 
     @staticmethod
     def from_dict(obj: Any) -> 'ServerInfoResponse':

@@ -84,10 +84,10 @@ class Favorite:
             self.info.to_file(cache_file)
         return self.info
 
-    def is_valid(self):
+    async def is_valid(self):
         if self.ipv4 is None and self.ipv6 is None: self.update_ips()
         if self.ipv4 is None and self.ipv6 is None: return False
-        if self.info is None: self.update()
+        if self.info is None: await self.update()
         return self.info is not None
 
     def to_str(self): return to_str(self.address, self.port)
@@ -137,10 +137,10 @@ class FavoritesFile:
                 ret.append(favorite)
         return ret
 
-    def purge_unreachable(self):
+    async def purge_unreachable(self):
         ret = []
         for favorite in self.favorites:
-            if not favorite.is_valid():
+            if not await favorite.is_valid():
                 ret.append(favorite)
                 self.favorites.remove(favorite)
         logging.info(f"Removed {len(ret)} unreachable favorites")
@@ -160,6 +160,7 @@ class FavoritesFile:
     def load(self, file: Path = None):
         if not file: file = self.path
         with open(file, "r") as f:
+            items = []
             try: items = load(f)
             except Exception as ex:
                 logging.error(f"Failed to load favorites from {file}: {ex}")
@@ -167,10 +168,12 @@ class FavoritesFile:
             logging.info((f"Loaded {len(self.favorites)} favorites from {file}"))
             return self.favorites
         
-    def save(self, file: Path = None):
+    def save(self, file: Path = None, newline: bool = False):
         if not file: file = self.path
+        favs = [fav.to_str() for fav in self.favorites]
         with open(file, "w") as f:
-            f.write("\n".join([fav.to_str() for fav in self.favorites]))
+            if newline: f.write("\n".join(favs))
+            else: f.write(dumps(favs, indent=4))
             logging.info((f"Saved {len(self.favorites)} favorites to {file}"))
 
     def toJSON(self):
