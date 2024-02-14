@@ -16,7 +16,7 @@ class Player:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Player':
-        _name = str(obj.get("name"))
+        _name = obj.get("name")
         _ping = int(obj.get("ping")) if obj.get("ping") else 0
         _score = int(obj.get("score")) if obj.get("score") else 0
         _test_client = int(obj.get("test_client")) if obj.get("test_client") else 0

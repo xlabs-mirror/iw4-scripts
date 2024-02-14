@@ -138,7 +138,7 @@ class WaypointFile:
     def to_rows(self) -> list[str]:
         return [wp.to_row() for wp in self.waypoints]
 
-    def save(self, path:Path=None, sort:SortingMethod=None, tabs:bool=False):
+    def save(self, path:Path=None, sort:SortingMethod=SortingMethod.NONE, tabs:bool=False):
         if path is None: path = self.path
         if (not path is type(Path)): path = Path(path)
         waypoints = self.waypoints

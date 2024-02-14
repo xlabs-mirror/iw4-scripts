@@ -1,6 +1,7 @@
 from typing import Any
 from dataclasses import dataclass
 from .source import Source
+from utils import get_safe
 
 @dataclass
 class SourceList:
@@ -8,5 +9,5 @@ class SourceList:
 
     @staticmethod
     def from_dict(obj: Any) -> 'SourceList':
-        _sources = Source.from_dict(obj.get("sources"))
+        _sources = Source.from_dict(get_safe(obj, "sources"))
         return SourceList(_sources)

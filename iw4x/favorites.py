@@ -181,7 +181,7 @@ class FavoritesFile:
             logging.info((f"Saved {len(self.favorites)} favorites to {file}"))
 
     def backup(self, file: Path = None):
-        if not file: file = self.path.with_suffix(".bak")
+        if not file: file = self.path + ".bak"
         self.save(file)
         logging.info((f"Backed up {len(self.favorites)} favorites to {file}"))
 

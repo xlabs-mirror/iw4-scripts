@@ -1,6 +1,6 @@
 from typing import Any
 from dataclasses import dataclass
-from .map import Map
+from .map import MapListMap
 
 @dataclass
 class Game:
@@ -11,7 +11,7 @@ class Game:
 
 @dataclass
 class Games:
-    games: dict[str,dict[str,Map]]
+    games: dict[str,dict[str,MapListMap]]
 
     @staticmethod
     def from_dict(obj: dict) -> 'Games':

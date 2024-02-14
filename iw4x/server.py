@@ -22,10 +22,10 @@ class Host:
     @staticmethod
     def from_dict(obj: Any) -> 'Host':
         if obj is None: return Host()
-        _admin = str(obj.get("admin", None))
-        _email = str(obj.get("email", None))
-        _location = str(obj.get("location", None))
-        _website = str(obj.get("website", None))
+        _admin = obj.get("admin", None)
+        _email = obj.get("email", None)
+        _location = obj.get("location", None)
+        _website = obj.get("website", None)
         return Host(_admin, _email, _location, _website)
 
 @dataclass
@@ -79,10 +79,10 @@ class Status:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Status':
-        _sv_hostname = str(obj.get("sv_hostname"))
+        _sv_hostname = obj.get("sv_hostname")
         _matchtype = int(obj.get("matchtype")) if obj.get("matchtype") else None
-        _g_gametype = str(obj.get("g_gametype"))
-        _mapname = str(obj.get("mapname"))
+        _g_gametype = obj.get("g_gametype")
+        _mapname = obj.get("mapname")
         _aimAssist = bool(obj.get("aimAssist"))
         _g_hardcore = bool(obj.get("g_hardcore"))
         _isPrivate = bool(obj.get("isPrivate"))
@@ -101,10 +101,10 @@ class Status:
         _sv_securityLevel = int(obj.get("sv_securityLevel")) if obj.get("sv_securityLevel") else None
         _voiceChat = bool(obj.get("voiceChat"))
         _protocol = int(obj.get("protocol")) if obj.get("protocol") else None
-        _shortversion = str(obj.get("shortversion"))
-        _version = str(obj.get("version"))
-        _gamename = str(obj.get("gamename"))
-        _checksum = str(obj.get("checksum"))
+        _shortversion = obj.get("shortversion")
+        _version = obj.get("version")
+        _gamename = obj.get("gamename")
+        _checksum = obj.get("checksum")
         return Status(_sv_hostname, _matchtype, _g_gametype, _mapname, _aimAssist, _g_hardcore, _isPrivate, _scr_game_allowkillcam, _scr_team_fftype, _sv_allowAnonymous, _sv_allowClientConsole, _sv_floodProtect, _sv_minPing, _sv_maxPing, _sv_maxRate, _sv_maxclients, _sv_privateClients, _sv_privateClientsForClients, _sv_pure, _sv_securityLevel, _voiceChat, _protocol, _shortversion, _version, _gamename, _checksum)
 
 @dataclass

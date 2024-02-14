@@ -25,10 +25,10 @@ class Server:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Server':
-        _identifier = str(obj.get("identifier"))
-        _ip = str(obj.get("ip"))
+        _identifier = obj.get("identifier")
+        _ip = obj.get("ip")
         _port = int(obj.get("port"))
-        _hostname = str(obj.get("hostname"))
+        _hostname = obj.get("hostname")
         _protocol = int(obj.get("protocol"))
         _date = int(obj.get("date"))
         return Server(_identifier, _ip, _port, _hostname, _protocol, _date)

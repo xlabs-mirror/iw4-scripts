@@ -15,6 +15,7 @@ from favorites2 import fetch_server_data
 logger = getLogger()
 logger.setLevel(DEBUG)
 basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S")
+basicConfig(filename="favorites.log", filemode="w", format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S")
 
 logger.debug((__file__,"START"))
 

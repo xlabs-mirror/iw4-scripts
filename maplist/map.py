@@ -1,12 +1,10 @@
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass
 from requests import get
 from hashlib import md5
-from .stringmap import StringMaps
-from .source import Source
-
-
-
+from parser.stringmap import StringMaps
+from maplist.source import Source, SourceID
+from utils import get_safe
 
 @dataclass
 class Name:
@@ -83,22 +81,23 @@ class Minimap:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Minimap':
-        _name = str(obj.get("name"))
-        _url = str(obj.get("url"))
-        _base64 = str(obj.get("base64"))
+        if obj is None: return None
+        _name = get_safe(obj, "name")
+        _url = get_safe(obj, "url")
+        _base64 = get_safe(obj, "base64")
         return Minimap(name=_name, url=_url, base64=_base64)
 
 @dataclass
 class Preview:
-    name: str
-    url: str
-    base64: str
+    name: Optional[str] = None
+    url: Optional[str] = None
+    base64: Optional[str] = None
 
     def init(self, name: str):
         self.name = name
         self.update()
     
-    def __init__(self, name: str, url: str, base64: str):
+    def __init__(self, name: str = None, url: str = None, base64: str = None):
         self.name = name
         self.url = url
         self.base64 = base64
@@ -131,49 +130,56 @@ class Preview:
 
     @staticmethod
     def from_dict(obj: Any) -> 'Preview':
-        _name = str(obj.get("name"))
-        _url = str(obj.get("url"))
-        _base64 = str(obj.get("base64"))
+        if obj is None: return None
+        _name = get_safe(obj, "name")
+        _url = get_safe(obj, "url")
+        _base64 = get_safe(obj, "base64")
         return Preview(_name, _url, _base64)
 
 @dataclass
 class Waypoints:
-    file: str
-    url: str
-    md5: str
-    count: str
+    file: Optional[str] = None
+    url: Optional[str] = None
+    md5: Optional[str] = None
+    count: Optional[int] = None
+
+    def update(self, url = None):
+        response = get(url or self.url)
+        self.file = response.text if response.status_code == 200 else None
+        self.md5 = md5(self.file.encode("utf-8")).hexdigest() if response.status_code == 200 else None
+        self.count = self.file.partition('\n')[0] if response.status_code == 200 else None
+        return self
 
     @staticmethod
     def from_mapname(mapname: str) -> 'Waypoints':
         file = f"{mapname}_wp.csv"
         url = f"https://raw.githubusercontent.com/xlabs-mirror/iw4x-bot-waypoints/master/{file}"
-        response = get(url)
-        waypoints = response.text if response.status_code == 200 else None
-        hash = md5(waypoints.encode("utf-8")).hexdigest() if response.status_code == 200 else None
-        count = waypoints.partition('\n')[0] if response.status_code == 200 else None
-        return Waypoints(file, url, hash, count)
+        ret = Waypoints(file, url)
+        ret.update()
+        return ret
 
     @staticmethod
     def from_dict(obj: Any) -> 'Waypoints':
-        _file = str(obj.get("file"))
-        _url = str(obj.get("url"))
-        _md5 = str(obj.get("md5"))
-        _count = str(obj.get("count"))
+        if obj is None: return None
+        _file = get_safe(obj, "file")
+        _url = get_safe(obj, "url")
+        _md5 = get_safe(obj, "md5")
+        _count = get_safe(obj, "count")
         return Waypoints(_file, _url, _md5, _count)
 
 @dataclass
-class Map:
-    source: str # Source
-    name: dict[str,str]
-    description: dict[str,str]
-    preview: Preview
-    minimap: Minimap
-    waypoints: Waypoints
+class MapListMap:
+    source: Optional[Source] = None
+    name: Optional[dict[str,str]] = None
+    description: Optional[dict[str,str]] = None
+    preview: Optional[Preview] = None
+    minimap: Optional[Minimap] = None
+    waypoints: Optional[Waypoints] = None
 
     @staticmethod
-    def from_mapname(name: str, source: str, strmap:StringMaps = None) -> 'Map':
+    def from_mapname(name: str, source: Source = None, strmap:StringMaps = None) -> 'MapListMap':
         displayname = Name.from_mapname(name, strmap)
-        return Map(
+        return MapListMap(
             source=source,
             name=displayname,
             description=Description.from_name(displayname=displayname['english'], strmap=strmap, source=source),
@@ -183,12 +189,13 @@ class Map:
         )
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Map':
-        try: _source = Source.from_dict(obj.get("source")).name
-        except: _source = obj.get("source")
-        _name = obj.get("name")
-        _description = obj.get("description")
-        _preview = Preview.from_dict(obj.get("preview"))
-        _minimap = Minimap.from_dict(obj.get("minimap"))
-        _waypoints = Waypoints.from_dict(obj.get("waypoints"))
-        return Map(_source, _name, _description, _preview, _minimap, _waypoints)
+    def from_dict(obj: Any) -> 'MapListMap':
+        if obj is None: return None
+        _source = Source.from_dict(get_safe(obj, "source"))
+        # except: _source = Source(SourceID.from_dict(get_safe(obj, "source")))
+        _name = get_safe(obj, "name")
+        _description = get_safe(obj, "description")
+        _preview = Preview.from_dict(get_safe(obj, "preview"))
+        _minimap = Minimap.from_dict(get_safe(obj, "minimap"))
+        _waypoints = Waypoints.from_dict(get_safe(obj, "waypoints"))
+        return MapListMap(_source, _name, _description, _preview, _minimap, _waypoints)

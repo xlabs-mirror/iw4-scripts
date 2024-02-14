@@ -47,6 +47,4 @@ if __name__ == "__main__":
         print(f"An error occurred: {e}")
         # Optionally, use pdb to enter the debugger
         import pdb; pdb.set_trace()
-else:
-    print("WTF?")
-    print(__name__)
+else: print(f"Imported as {__name__} from {__file__}")
