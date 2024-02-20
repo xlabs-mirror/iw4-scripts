@@ -51,10 +51,11 @@ def add_maps(file, source, stringmaps = None):
 #     map.preview.update()
 #     map.minimap.update()
 
-
+i = 0
 for actname, act in campaignlist.Acts.items():
     source = Source(f"Singleplayer ({actname})", "https://steamcommunity.com/groups/IW4X/discussions/0/1470841715980056455")
     for mission in act:
+        i += 1
         mission: Mission
         if mission.mapname:
             if mission.mapname not in maplist.maps:
@@ -65,8 +66,13 @@ for actname, act in campaignlist.Acts.items():
                 )
                 maplist.maps[mission.mapname].preview = Preview(url=mission.preview.url)
             maplist.maps[mission.mapname].source = source
-            maplist.maps[mission.mapname].name["english"] = mission.name
-            maplist.maps[mission.mapname].description["english"] = mission.description
-        
+            maplist.maps[mission.mapname].name["english"] = f"{i}: " + mission.name.replace("\u00e2\u20ac\u2122","'")
+            maplist.maps[mission.mapname].description["english"] = mission.description.replace("\u00e2\u20ac\u2122","'")
+
+mission_mapnames = [mission.mapname for act in campaignlist.Acts.values() for mission in act if mission.mapname]
+
+for mapname, map in maplist.maps.items():
+    if map.source.name.lower().startswith("single") and mapname not in mission_mapnames:
+        map.source = Source("Unknown")
 
 maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')

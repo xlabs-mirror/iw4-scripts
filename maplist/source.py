@@ -54,7 +54,7 @@ class Mirror:
 @dataclass
 class Source:
     name: str = None # SourceID = SourceID.UNKNWOWN
-    url: ParseResult = None
+    url: str = None
     md5: str = None
     mirrors: Optional[list[Mirror]] = None
 
@@ -63,7 +63,7 @@ class Source:
         if obj is None: return None
         # _id = get_safe(obj, "id")
         _name = get_safe(obj, "name")
-        _url = urlparse(get_safe(obj, "url"))
+        _url = get_safe(obj, "url") # urlparse(
         _md5 = get_safe(obj, "md5")
         _mirrors = Mirror.from_dict(get_safe(obj, "mirrors")) or None
         return Source(_name, _url, _md5, _mirrors)
