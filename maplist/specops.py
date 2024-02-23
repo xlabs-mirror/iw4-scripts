@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Any
 from dataclasses import dataclass
 from json import dumps, load
 from utils import get_safe
@@ -55,14 +55,20 @@ class SpecOpsAct(CampaignAct):
     required_stars: Optional[int]
     missions: List[SpecOpsMission]
 
+    def __init__(self, name: dict[str, str], description: dict[str, str], missions: List[SpecOpsMission], required_stars: int) -> None:
+        self.name = name
+        self.description = description
+        self.missions = missions
+        self.required_stars = required_stars
+
     @staticmethod
     def from_dict(obj: Any) -> 'SpecOpsAct':
         if not obj: return None
         _name = get_safe(obj, "name")
         _description = get_safe(obj, "description")
-        _required_stars = get_safe(obj, "required_stars")
         _missions = [SpecOpsMission.from_dict(y) for y in get_safe(obj, "missions")]
-        return SpecOpsAct(_name, _description, _required_stars, _missions)
+        _required_stars = get_safe(obj, "required_stars")
+        return SpecOpsAct(_name, _description, _missions, _required_stars)
 
 
 @dataclass
@@ -73,16 +79,16 @@ class SpecOpsList:
         self.Acts = acts
 
     @staticmethod
-    def from_dict(obj: Any) -> 'SpecOpsList':
+    def from_list(obj: list) -> 'SpecOpsList':
         if not obj: return None
-        Acts = [SpecOpsAct.from_dict(y) for y in get_safe(obj, "Acts")]
+        Acts = [SpecOpsAct.from_dict(y) for y in obj]
         return SpecOpsList(Acts)
     
     @staticmethod
     def load(file: str = 'specops.json'):
         with open(file, 'r', encoding="utf-8") as f:
             jsonstring = load(f)
-            return SpecOpsList.from_dict(jsonstring)
+            return SpecOpsList.from_list(jsonstring)
     
     def save(self, file: str = 'specops.json'):
         json = dumps(

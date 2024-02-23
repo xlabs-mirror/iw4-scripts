@@ -7,9 +7,10 @@ from pprint import pprint
 from json import dumps as json_dumps, load as json_load
 from logging import getLogger, basicConfig, DEBUG
 from maplist import Maplist
-from maplist.map import MapListMap, Preview
-from maplist.campaign import CampaignList, Mission
+from maplist.map import MapListMap, Preview, Loadscreen, Minimap, Waypoints
+from maplist.campaign import CampaignList, CampaignMission, Location, Mission
 from maplist.source import Source, SourceID
+from maplist.specops import SpecOpsList, SpecOpsMission
 
 logger = getLogger(__name__)
 basicConfig(level=DEBUG)
@@ -20,8 +21,12 @@ maplist = Maplist.load(dir / "maps.json")
 logger.info(f"Loaded {len(maplist.maps)} maps")
 
 campaignlist = CampaignList.load(dir / "campaign.json")
-mission_count = sum(len(act) for act in campaignlist.Acts.values())
-logger.info(f"Loaded {mission_count} missions from {len(campaignlist.Acts)} campaign acts")
+campaign_mission_count = sum(len(act.missions) for act in campaignlist.Acts)
+logger.info(f"Loaded {campaign_mission_count} missions from {len(campaignlist.Acts)} campaign acts")
+
+specopslist = SpecOpsList.load(dir / "specops.json")
+specops_mission_count = sum(len(act.missions) for act in specopslist.Acts)
+logger.info(f"Loaded {specops_mission_count} missions from {len(specopslist.Acts)} specops acts")
 
 # stringmaps = StringMaps()
 # stringmaps.parse_files(stringmaps.get_files())

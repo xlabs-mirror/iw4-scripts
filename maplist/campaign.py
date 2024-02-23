@@ -2,7 +2,8 @@ from typing import Optional, List, Union, Any
 from dataclasses import dataclass
 from json import dumps, load
 from utils import get_safe
-from maplist.map import Preview
+from maplist.image import Preview
+    
 
 @dataclass
 class Location:
@@ -81,6 +82,11 @@ class CampaignAct:
     description: Optional[dict[str,str]]
     missions: List[CampaignMission]
 
+    def __init__(self, name: dict[str,str], description: dict[str,str], missions: list[CampaignMission]) -> None:
+        self.name = name
+        self.description = description
+        self.missions = missions
+
     @staticmethod
     def from_dict(obj: Any) -> 'CampaignAct':
         if not obj: return None
@@ -97,16 +103,16 @@ class CampaignList:
         self.Acts = acts
 
     @staticmethod
-    def from_dict(obj: Any) -> 'CampaignList':
+    def from_list(obj: list) -> 'CampaignList':
         if not obj: return None
-        Acts = [CampaignAct.from_dict(y) for y in get_safe(obj, "Acts")]
+        Acts = [CampaignAct.from_dict(y) for y in obj]
         return CampaignList(Acts)
     
     @staticmethod
     def load(file: str = 'campaigns.json'):
         with open(file, 'r', encoding="utf-8") as f:
             jsonstring = load(f)
-            return CampaignList.from_dict(jsonstring)
+            return CampaignList.from_list(jsonstring)
     
     def save(self, file: str = 'campaigns.json'):
         json = dumps(

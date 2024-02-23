@@ -67,3 +67,7 @@ class Source:
         _md5 = get_safe(obj, "md5")
         _mirrors = Mirror.from_dict(get_safe(obj, "mirrors")) or None
         return Source(_name, _url, _md5, _mirrors)
+
+    def __eq__(self, other):
+        print("Comparing", self, other)
+        return self.url == other.url and self.md5 == other.md5 and self.name == other.name and self.mirrors == other.mirrors
