@@ -1,6 +1,6 @@
+from json import JSONEncoder, dump, load
 from typing import Any
 from dataclasses import dataclass
-import json
 from enum import Enum
 from typing import Optional
 from pathlib import Path
@@ -8,8 +8,6 @@ from logging import getLogger, DEBUG
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
-
-
 
 class DvarType(Enum):
     BOOL = "bool"
@@ -36,15 +34,18 @@ class Dvar:
         self.min = min
         self.max = max
 
+    def to_dict(self) -> dict[str, Any]:
+        return {k: v for k, v in self.__dict__.items() if v is not None and v != "None"}
+
     @staticmethod
     def from_dict(obj: Any) -> 'Dvar':
-        _Hash = str(obj.get("Hash"))
-        _Type = str(obj.get("Type"))
-        _Name = str(obj.get("Name"))
-        _Description = str(obj.get("Description"))
-        _Default = str(obj.get("Default"))
-        _Min = str(obj.get("Min"))
-        _Max = str(obj.get("Max"))
+        _Hash = obj.get("Hash")
+        _Type = obj.get("Type")
+        _Name = obj.get("Name")
+        _Description = obj.get("Description")
+        _Default = obj.get("Default")
+        _Min = obj.get("Min")
+        _Max = obj.get("Max")
         return Dvar(_Hash, _Type, _Name, _Description, _Default, _Min, _Max)
     
 
@@ -52,23 +53,17 @@ class DvarDatabase:
     file: Path 
     dvars: list[Dvar]
 
-    def __init__(self, dvars: list[Dvar], file: Path = None) -> None:
+    def __init__(self, dvars: list[Dvar] = [], file: Path = None) -> None:
         logger.debug(f"Creating new DvarDatabase with {len(dvars)} dvars")
         self.file = file
         self.dvars = dvars
-
-    def load(self, file: Path = None) -> None:
-        file = file or self.file
-        logger.debug(f"Loading dvars from {file}")
-        with open(file, "r") as f:
-            self.dvars = json.load(f)
 
     def save(self, file: Path = None, backup: bool = True, force: bool = False, indent: bool = True) -> None:
         file = file or self.file
         logger.debug(f"Saving dvars to {file}")
         if backup: self.backup(force)
         with open(file, "w") as f:
-            json.dump(self.dvars, f, indent=4 if indent else None)
+            dump(self.dvars, f, cls=MyEncoder, indent=4 if indent else None)
 
     def backup(self, file: Path = None, force: bool = False) -> None:
         file = file or self.file
@@ -83,8 +78,13 @@ class DvarDatabase:
     @staticmethod
     def from_file(file: Path) -> 'DvarDatabase':
         logger.debug(f"Loading dvars from {file}")
+        ret = DvarDatabase(file=file)
         with open(file, "r") as f:
-            return DvarDatabase(dvars=json.load(f), file=file)
+            for dvar in load(f):
+                ret.dvars.append(Dvar.from_dict(dvar))
+        return ret
     
+class MyEncoder(JSONEncoder):
+        def default(self, o: Dvar): return o.to_dict()
 
 if __name__ == "__main__": raise Exception("This file is not meant to be run directly!")
