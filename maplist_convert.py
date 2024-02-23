@@ -11,6 +11,7 @@ from maplist.map import MapListMap, Preview, Loadscreen, Minimap, Waypoints
 from maplist.campaign import CampaignList, CampaignMission, Location, Mission, CampaignAct
 from maplist.source import Source, SourceID
 from maplist.specops import SpecOpsList, SpecOpsMission, SpecOpsAct
+from maplist.image import IWImage, PNGImage
 
 def load_maps(file, as_json = False):
     with open(file, 'r') as f:
@@ -124,19 +125,19 @@ for txtmap in txtlist:
 #     map.title = map.name
 #     map.name = None
 
-for mapname, map in maplist.maps.items():
-    for act in campaignlist.Acts:
-        for mission in act.missions:
-            if mission.mapname == mapname:
-                logger.debug(f"Found mission {mission.title} for map {mapname}")
-                # map.title['english'] = f"{mission.title['english']} (#{mission.index})"
-                map.index = mission.index
-                break
-    for act in specopslist.Acts:
-        for mission in act.missions:
-            if mission.mapname == mapname:
-                logger.debug(f"Found mission {mission.title} for map {mapname}")
-                map.index = mission.index
+# for mapname, map in maplist.maps.items():
+#     for act in campaignlist.Acts:
+#         for mission in act.missions:
+#             if mission.mapname == mapname:
+#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
+#                 # map.title['english'] = f"{mission.title['english']} (#{mission.index})"
+#                 map.index = mission.index
+#                 break
+#     for act in specopslist.Acts:
+#         for mission in act.missions:
+#             if mission.mapname == mapname:
+#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
+#                 map.index = mission.index
 
 # for mapname, alternatives in alternatives_dict.items():
 #     if not mapname in maplist.maps.keys():
@@ -156,7 +157,44 @@ for mapname, map in maplist.maps.items():
 # maplist.update()
 
 for mapname, map in maplist.maps.items():
-    if map.waypoints:
-        map.waypoints.filename = Waypoints.get_filename(mapname)
+    if map.preview:
+        preview = map.preview
+        map.preview = Preview(
+            iwi=IWImage(
+                filename=preview["filename"]
+            ),
+            png=PNGImage(
+                filename=mapname + ".png",
+                md5=preview["md5"] if "md5" in preview else None,
+                url=preview["url"] if "url" in preview else None
+            )
+        )
+    if map.loadscreen:
+        preview = map.loadscreen
+        map.preview = Loadscreen(
+            iwi=IWImage(
+                filename=preview["filename"]
+            ),
+            png=PNGImage(
+                filename=mapname + ".png",
+                md5=preview["md5"] if "md5" in preview else None,
+                url=preview["url"] if "url" in preview else None
+            )
+        )
+    if map.minimap:
+        preview = map.minimap
+        map.minimap = Minimap(
+            iwi=IWImage(
+                filename=preview["filename"]
+            ),
+            png=PNGImage(
+                filename=mapname + ".png",
+                md5=preview["md5"] if "md5" in preview else None,
+                url=preview["url"] if "url" in preview else None
+            )
+        )
+
+maplist.update()
+        
 
 maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')

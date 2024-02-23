@@ -9,6 +9,7 @@ from maplist.source import Source
 from maplist.image import Preview, Loadscreen, Minimap
 from maplist.campaign import CampaignList
 from maplist.specops import SpecOpsList
+from maplist.file import FileBase
 from utils import get_safe, get_fallback
 
 from logging import getLogger
@@ -51,33 +52,26 @@ class Description:
         return ret
 
 @dataclass
-class Waypoints:
-    filename: Optional[str] = None
-    url: Optional[str] = None
-    md5: Optional[str] = None
+class Waypoints(FileBase):
     count: Optional[int] = None
-    base64: Optional[str] = None
-
-    def update(self, urls: list[str] = None, base64 = False):
-        filename = self.filename or self.get_filename()
-        if not urls: urls = [
+    def update(self, base64 = False, map: 'MapListMap' = None) -> 'Waypoints':
+        filename = self.filename or self.get_filename(map.mapname) if map else None
+        if not filename: raise Exception("No filename for waypoints file!")
+        urls = [
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{filename}",
             f"https://raw.githubusercontent.com/ineedbots/iw4_bot_warfare/master/scriptdata/waypoints/{filename}",
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4x-bot-waypoints/master/{filename}"
         ]
         logger.debug(f"Updating waypoints for {filename} from {len(urls)} urls")
-        response = get_fallback(urls)
+        response = super().update(urls, filename, base64)
         if response:
-            self.filename = filename
-            self.md5 = md5(response.text.encode("utf-8")).hexdigest()
             self_declared_count = response.text.split('\n', 1)[0]
             real_count = len(response.text.splitlines()) - 1
             if self_declared_count != real_count:
                 msg = f"[{filename}] Declared waypoints count {self_declared_count} does not match real waypoints count {real_count}"
                 logger.warning(msg); raise Exception(msg)
             self.count = real_count
-            if base64: self.base64 = urlsafe_b64encode(self.file.encode("utf-8")).decode("utf-8") if base64 else None
-        else: self.md5 = None;self.count = None;self.base64 = None
+        else: self.count = None
         return self
     
     def get_mapname(self) -> str: return Waypoints.get_mapname(self.filename)
@@ -143,28 +137,22 @@ class MapListMap:
         _description = get_safe(obj, "description")
         _source = Source.from_dict(get_safe(obj, "source"))
         # except: _source = Source(SourceID.from_dict(get_safe(obj, "source")))
-        _preview = Preview.from_dict(get_safe(obj, "preview"))
-        _loadscreen = Loadscreen.from_dict(get_safe(obj, "loadscreen"))
-        _minimap = Minimap.from_dict(get_safe(obj, "minimap"))
+        _preview = get_safe(obj, "preview") # Preview.from_dict(get_safe(obj, "preview"))
+        _loadscreen = get_safe(obj, "loadscreen") # Loadscreen.from_dict(get_safe(obj, "loadscreen"))
+        _minimap = get_safe(obj, "minimap") # Minimap.from_dict(get_safe(obj, "minimap"))
         _waypoints = Waypoints.from_dict(get_safe(obj, "waypoints"))
         _alternatives = get_safe(obj, "alternatives")
         return MapListMap(index=_index, mapname=_mapname, title=_title, source=_source, description=_description, preview=_preview, loadscreen=_loadscreen, minimap=_minimap, waypoints=_waypoints, alternatives=_alternatives)
 
     def update(self) -> 'MapListMap':
         logger.debug(f"Updating {self.mapname}")
-        if self.preview:
-            if not self.preview.name: self.preview.name = f"preview_{self.mapname}"
-            self.preview.update()
+        if self.preview: self.preview.update(map=self)
         else: self.preview = Preview.from_mapname(self.mapname)
-        if self.loadscreen:
-            if not self.loadscreen.name: self.loadscreen.name = f"loadscreen_map_{self.mapname}"
-            self.loadscreen.update()
+        if self.loadscreen: self.loadscreen.update(map=self)
         else: self.loadscreen = Loadscreen.from_mapname(self.mapname)
-        if self.minimap:
-            if not self.minimap.name: self.minimap.name = f"compass_map_{self.mapname.lower()}"
-            self.minimap.update()
+        if self.minimap: self.minimap.update(map=self)
         else: self.minimap = Minimap.from_mapname(self.mapname)
-        if self.waypoints: self.waypoints.update()
+        if self.waypoints: self.waypoints.update(map=self)
         else: self.waypoints = Waypoints.from_mapname(self.mapname)
         return self
     
