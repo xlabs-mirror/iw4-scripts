@@ -2,6 +2,11 @@ from json import JSONEncoder
 from typing import Any
 from requests import get, Response
 
+def parse_int(input: Any) -> int|None:
+    if isinstance(input, int): return input
+    try: return int(input)
+    except: return None
+
 def bad_status_code(response): return response.status_code < 200 or response.status_code > 299
 
 def get_fallback(urls: list[str]) -> Response|None:

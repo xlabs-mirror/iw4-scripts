@@ -1,3 +1,8 @@
+from pathlib import Path
+from sys import path as syspath
+from os import getcwd
+syspath.append(getcwd())
+
 from base64 import urlsafe_b64encode
 from typing import Any, Optional
 from dataclasses import dataclass
@@ -10,7 +15,8 @@ from maplist.image import Preview, Loadscreen, Minimap
 from maplist.campaign import CampaignList
 from maplist.specops import SpecOpsList
 from maplist.file import FileBase
-from utils import get_safe, get_fallback
+from utils import get_safe, parse_int
+from pprint import pformat
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -65,7 +71,8 @@ class Waypoints(FileBase):
         logger.debug(f"Updating waypoints for {filename} from {len(urls)} urls")
         response = super().update(urls, filename, base64)
         if response:
-            self_declared_count = response.text.split('\n', 1)[0]
+            logger.debug(pformat(response))
+            self_declared_count = parse_int(response.text.split('\n', 1)[0])
             real_count = len(response.text.splitlines()) - 1
             if self_declared_count != real_count:
                 msg = f"[{filename}] Declared waypoints count {self_declared_count} does not match real waypoints count {real_count}"

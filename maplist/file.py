@@ -40,8 +40,8 @@ class FileBase:
         if response:
             self.filename = filename
             self.url = response.url
-            response = response.text.encode("utf-8")
-            self.md5 = md5(response).hexdigest()
-            if base64: self.base64 = urlsafe_b64encode(response).decode("utf-8") if base64 else None
+            response_encoded = response.text.encode("utf-8")
+            self.md5 = md5(response_encoded).hexdigest()
+            if base64: self.base64 = urlsafe_b64encode(response_encoded).decode("utf-8") if base64 else None
         else: self.md5 = None;self.base64 = None; self.url = None
         return response
