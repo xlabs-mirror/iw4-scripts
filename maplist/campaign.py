@@ -29,10 +29,29 @@ class Mission:
     name: Optional[str]
     mapname: Optional[str]
     description: Optional[str]
+    preview: Optional[Preview]
+
+    def __init__(self, index: int, name: str, mapname: str, description: str, preview: Preview) -> None:
+        self.index = index
+        self.name = name
+        self.mapname = mapname
+        self.description = description
+        self.preview = preview
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'Mission':
+        if not obj: return None
+        _index = get_safe(obj, "index")
+        _name = get_safe(obj, "name")
+        _mapname = get_safe(obj, "mapname")
+        _description = get_safe(obj, "description")
+        _preview = Preview.from_dict(get_safe(obj, "preview"))
+        return Mission(_index, _name, _mapname, _description, _preview)
+
+@dataclass
+class CampaignMission(Mission):
     location: Union[Location, str]
     date: Optional[str]
-    preview: Optional[Preview]
-    compass: Optional[str]
 
     def __init__(self, index: int, name: str, mapname: str, description: str, location: Union[Location, str], date: str, preview: Preview) -> None:
         self.index = index
@@ -44,7 +63,7 @@ class Mission:
         self.preview = preview
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Mission':
+    def from_dict(obj: Any) -> 'CampaignMission':
         if not obj: return None
         _index = get_safe(obj, "index")
         _name = get_safe(obj, "name")
@@ -55,32 +74,32 @@ class Mission:
             _location = Location.from_dict(get_safe(obj, "location"))
         _date = get_safe(obj, "date")
         _preview = Preview.from_dict(get_safe(obj, "preview"))
-        return Mission(_index, _name, _mapname, _description, _location, _date, _preview)
+        return CampaignMission(_index, _name, _mapname, _description, _location, _date, _preview)
 
-class Act:
+class CampaignAct:
     name: Optional[dict[str,str]]
     description: Optional[dict[str,str]]
-    missions: List[Mission]
+    missions: List[CampaignMission]
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Act':
+    def from_dict(obj: Any) -> 'CampaignAct':
         if not obj: return None
         _name = get_safe(obj, "name")
         _description = get_safe(obj, "description")
-        _missions = [Mission.from_dict(y) for y in get_safe(obj, "missions")]
-        return Act(_name, _description, _missions)
+        _missions = [CampaignMission.from_dict(y) for y in get_safe(obj, "missions")]
+        return CampaignAct(_name, _description, _missions)
 
 @dataclass
 class CampaignList:
-    Acts: List[Act]
+    Acts: List[CampaignAct]
 
-    def __init__(self, acts: list[Act]) -> None:
+    def __init__(self, acts: list[CampaignAct]) -> None:
         self.Acts = acts
 
     @staticmethod
     def from_dict(obj: Any) -> 'CampaignList':
         if not obj: return None
-        Acts = [Act.from_dict(y) for y in get_safe(obj, "Acts")]
+        Acts = [CampaignAct.from_dict(y) for y in get_safe(obj, "Acts")]
         return CampaignList(Acts)
     
     @staticmethod

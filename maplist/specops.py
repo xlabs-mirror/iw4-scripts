@@ -2,6 +2,7 @@ from typing import Optional, List, Union, Any
 from dataclasses import dataclass
 from json import dumps, load
 from utils import get_safe
+from maplist.campaign import CampaignAct, Mission
 
 @dataclass
 class Preview:
@@ -16,17 +17,12 @@ class Preview:
         _url = get_safe(obj, "url")
         return Preview(_url)
 
-class Mission:
-    index: int
-    name: Optional[dict[str,str]]
-    description: Optional[dict[str,str]]
+class SpecOpsMission(Mission):
     opposition: Optional[str]
     classification: Optional[str]
     estimated_time: Optional[str]
     iw_best_time: Optional[str]
-    mapname: Optional[str]
     required_players: Optional[int]
-    preview: Optional[Preview]
 
     def __init__(self, index: int, name: dict[str,str], description: dict[str,str], opposition: str, classification: str, estimated_time: str, iw_best_time: str, mapname: str, required_players: Optional[int], preview: Preview) -> None:
         self.index = index
@@ -41,7 +37,7 @@ class Mission:
         self.preview = preview
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Mission':
+    def from_dict(obj: Any) -> 'SpecOpsMission':
         if not obj: return None
         _index = get_safe(obj, "index")
         _name = get_safe(obj, "name")
@@ -53,35 +49,33 @@ class Mission:
         _mapname = get_safe(obj, "mapname")
         _required_players = get_safe(obj, "required_players")
         _preview = Preview.from_dict(get_safe(obj, "preview"))
-        return Mission(_index, _name, _description, _opposition, _classification, _estimated_time, _iw_best_time, _mapname, _required_players, _preview)
+        return SpecOpsMission(_index, _name, _description, _opposition, _classification, _estimated_time, _iw_best_time, _mapname, _required_players, _preview)
 
-class Act:
-    name: Optional[dict[str,str]]
-    description: Optional[dict[str,str]]
+class SpecOpsAct(CampaignAct):
     required_stars: Optional[int]
-    missions: List[Mission]
+    missions: List[SpecOpsMission]
 
     @staticmethod
-    def from_dict(obj: Any) -> 'Act':
+    def from_dict(obj: Any) -> 'SpecOpsAct':
         if not obj: return None
         _name = get_safe(obj, "name")
         _description = get_safe(obj, "description")
         _required_stars = get_safe(obj, "required_stars")
-        _missions = [Mission.from_dict(y) for y in get_safe(obj, "missions")]
-        return Act(_name, _description, _required_stars, _missions)
+        _missions = [SpecOpsMission.from_dict(y) for y in get_safe(obj, "missions")]
+        return SpecOpsAct(_name, _description, _required_stars, _missions)
 
 
 @dataclass
 class SpecOpsList:
-    Acts: List[Act]
+    Acts: List[SpecOpsAct]
 
-    def __init__(self, acts: list[Act]) -> None:
+    def __init__(self, acts: list[SpecOpsAct]) -> None:
         self.Acts = acts
 
     @staticmethod
     def from_dict(obj: Any) -> 'SpecOpsList':
         if not obj: return None
-        Acts = [Act.from_dict(y) for y in get_safe(obj, "Acts")]
+        Acts = [SpecOpsAct.from_dict(y) for y in get_safe(obj, "Acts")]
         return SpecOpsList(Acts)
     
     @staticmethod
