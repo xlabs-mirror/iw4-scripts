@@ -1,10 +1,19 @@
 from json import JSONEncoder
 from typing import Any
+from requests import get, Response
+
+def bad_status_code(response): return response.status_code < 200 or response.status_code > 299
+
+def get_fallback(urls: list[str]) -> Response|None:
+    for url in urls:
+        response = get(url)
+        if not bad_status_code(response): return response
+    return None
 
 def get_safe(obj, key, default = None):
     if obj is None: return default
     # if isinstance(obj, str): return obj.get(key).encode('utf-8')
-    if isinstance(obj, bytes): raise Exception(f"{str(obj._)} is bytes!") # return obj.get(key).decode('utf-8')
+    if isinstance(obj, bytes): raise Exception(f"{obj} is bytes!") # return obj.get(key).decode('utf-8')
     return obj.get(key, default)
 
 class jsencoder(JSONEncoder):

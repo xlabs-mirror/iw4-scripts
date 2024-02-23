@@ -11,6 +11,9 @@ from maplist.campaign import CampaignList
 from maplist.specops import SpecOpsList
 from utils import get_safe
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 @dataclass
 class Title:
     @staticmethod
@@ -49,36 +52,50 @@ class Description:
 
 @dataclass
 class Waypoints:
+    filename: Optional[str] = None
     file: Optional[str] = None
     url: Optional[str] = None
     md5: Optional[str] = None
     count: Optional[int] = None
+    base64: Optional[str] = None
 
-    def update(self, url = None):
-        url = url or self.url
-        if not url: url = f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{self.file}"
+    def update(self, urls: list[str] = None, base64 = False):
+        self.get_filename()
         print("Updating waypoints from",url)
+        if not urls: urls = [
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{self.filename}"
+        ]
         response = get(url)
-        self.file = response.text if response.status_code == 200 else None
+        # self.file = response.text if response.status_code == 200 else None
         self.md5 = md5(self.file.encode("utf-8")).hexdigest() if response.status_code == 200 else None
         self.count = self.file.partition('\n')[0] if response.status_code == 200 else None
+        self.base64 = urlsafe_b64encode(self.file.encode("utf-8")).decode("utf-8") if base64 else None
         return self
+    
+    def get_mapname(self) -> str: return Waypoints.get_mapname(self.filename)
+    @staticmethod
+    def get_filename(mapname: str) -> str:
+        return f"{mapname}_wp.csv"
+    @staticmethod
+    def get_mapname(filename: str) -> str:
+        return filename.removesuffix('_wp.csv')
 
     @staticmethod
     def from_mapname(mapname: str) -> 'Waypoints':
-        file = f"{mapname}_wp.csv"
-        ret = Waypoints(file)
+        ret = Waypoints(Waypoints.get_filename(mapname))
         ret.update()
         return ret
 
     @staticmethod
     def from_dict(obj: Any) -> 'Waypoints':
         if obj is None: return None
-        _file = get_safe(obj, "file")
+        _filename = get_safe(obj, "filename")
+        _file = get_safe(obj, "file") # todo: remove
         _url = get_safe(obj, "url")
         _md5 = get_safe(obj, "md5")
         _count = get_safe(obj, "count")
-        return Waypoints(_file, _url, _md5, _count)
+        _base64 = get_safe(obj, "base64")
+        return Waypoints(filename=_filename, file=_file, url=_url, md5=_md5, count=_count, base64=_base64) # todo: remove
 
 @dataclass
 class MapListMap:
@@ -125,11 +142,18 @@ class MapListMap:
         return MapListMap(index=_index, mapname=_mapname, title=_title, source=_source, description=_description, preview=_preview, loadscreen=_loadscreen, minimap=_minimap, waypoints=_waypoints, alternatives=_alternatives)
 
     def update(self) -> 'MapListMap':
-        if self.preview: self.preview.update()
+        logger.debug(f"Updating {self.mapname}")
+        if self.preview:
+            if not self.preview.name: self.preview.name = f"preview_{self.mapname}"
+            self.preview.update()
         else: self.preview = Preview.from_mapname(self.mapname)
-        if self.loadscreen: self.loadscreen.update()
+        if self.loadscreen:
+            if not self.loadscreen.name: self.loadscreen.name = f"loadscreen_map_{self.mapname}"
+            self.loadscreen.update()
         else: self.loadscreen = Loadscreen.from_mapname(self.mapname)
-        if self.minimap: self.minimap.update()
+        if self.minimap:
+            if not self.minimap.name: self.minimap.name = f"compass_map_{self.mapname.lower()}"
+            self.minimap.update()
         else: self.minimap = Minimap.from_mapname(self.mapname)
         if self.waypoints: self.waypoints.update()
         else: self.waypoints = Waypoints.from_mapname(self.mapname)

@@ -21,7 +21,7 @@ basicConfig(level=DEBUG)
 
 dir = Path("P:\Python\iw4\iw4-resources")
 
-maplist = Maplist.load(dir / "maps.json")
+maplist = Maplist.load(dir / "maps_out.json")
 logger.info(f"Loaded {maplist}")
 
 campaignlist = CampaignList.load(dir / "campaign.json")
@@ -146,6 +146,8 @@ for txtmap in txtlist:
 
 # maplist.update()
 
+for mapname, map in maplist.maps.items():
+    if map.waypoints:
+        map.waypoints.file = f"{mapname}_wp.csv"
 
-
-maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')
+maplist.save('P:\Python\iw4\iw4-resources\maps_out2.json')
