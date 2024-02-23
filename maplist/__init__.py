@@ -40,8 +40,6 @@ class Maplist:
         for game, _maps in obj.items():
             for mapname, map in _maps.items():
                 maps[mapname] = MapListMap.from_dict(map)
-        sources = [map.source for map in maps.values()]
-        print("Loaded", len(maps), "maps from", len(sources), "sources")
         return Maplist(game, maps)
     
     @staticmethod
@@ -91,3 +89,6 @@ class Maplist:
             with open(file, 'w') as f: f.write(json)
         print("Saved", len(self.maps), "maps to", file)
         return json
+    
+    def __str__(self) -> str:
+        return f"{len(self.maps)} maps from {len(self.get_maps_by_source())} sources"

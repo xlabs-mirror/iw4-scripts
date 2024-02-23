@@ -126,3 +126,6 @@ class CampaignList:
             with open(file, 'w') as f: f.write(json)
         print("Saved", len(self.Acts), "acts to", file)
         return json
+    
+    def __str__(self) -> str:
+        return f"{sum(len(act.missions) for act in self.Acts)} missions from {len(self.Acts)} campaign acts"

@@ -18,15 +18,13 @@ basicConfig(level=DEBUG)
 dir = Path("P:\Python\iw4\iw4-resources")
 
 maplist = Maplist.load(dir / "maps.json")
-logger.info(f"Loaded {len(maplist.maps)} maps")
+logger.info(f"Loaded {maplist}")
 
 campaignlist = CampaignList.load(dir / "campaign.json")
-campaign_mission_count = sum(len(act.missions) for act in campaignlist.Acts)
-logger.info(f"Loaded {campaign_mission_count} missions from {len(campaignlist.Acts)} campaign acts")
+logger.info(f"Loaded {campaignlist}")
 
 specopslist = SpecOpsList.load(dir / "specops.json")
-specops_mission_count = sum(len(act.missions) for act in specopslist.Acts)
-logger.info(f"Loaded {specops_mission_count} missions from {len(specopslist.Acts)} specops acts")
+logger.info(f"Loaded {specopslist}")
 
 # stringmaps = StringMaps()
 # stringmaps.parse_files(stringmaps.get_files())

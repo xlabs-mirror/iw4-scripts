@@ -69,5 +69,10 @@ class Source:
         return Source(_name, _url, _md5, _mirrors)
 
     def __eq__(self, other):
-        print("Comparing", self, other)
         return self.url == other.url and self.md5 == other.md5 and self.name == other.name and self.mirrors == other.mirrors
+    
+    def __hash__(self):
+        return hash((self.name, self.url, self.md5, self.mirrors))
+    
+    def __str__(self):
+        return f"{self.name} ({self.url}) [{len(self.mirrors) if self.mirrors else 0} mirrors]"
