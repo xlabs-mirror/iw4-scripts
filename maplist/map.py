@@ -9,7 +9,7 @@ from maplist.source import Source
 from maplist.image import Preview, Loadscreen, Minimap
 from maplist.campaign import CampaignList
 from maplist.specops import SpecOpsList
-from utils import get_safe
+from utils import get_safe, get_fallback
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -53,23 +53,31 @@ class Description:
 @dataclass
 class Waypoints:
     filename: Optional[str] = None
-    file: Optional[str] = None
     url: Optional[str] = None
     md5: Optional[str] = None
     count: Optional[int] = None
     base64: Optional[str] = None
 
     def update(self, urls: list[str] = None, base64 = False):
-        self.get_filename()
-        print("Updating waypoints from",url)
+        filename = self.filename or self.get_filename()
         if not urls: urls = [
-            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{self.filename}"
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{filename}",
+            f"https://raw.githubusercontent.com/ineedbots/iw4_bot_warfare/master/scriptdata/waypoints/{filename}",
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4x-bot-waypoints/master/{filename}"
         ]
-        response = get(url)
-        # self.file = response.text if response.status_code == 200 else None
-        self.md5 = md5(self.file.encode("utf-8")).hexdigest() if response.status_code == 200 else None
-        self.count = self.file.partition('\n')[0] if response.status_code == 200 else None
-        self.base64 = urlsafe_b64encode(self.file.encode("utf-8")).decode("utf-8") if base64 else None
+        logger.debug(f"Updating waypoints for {filename} from {len(urls)} urls")
+        response = get_fallback(urls)
+        if response:
+            self.filename = filename
+            self.md5 = md5(response.text.encode("utf-8")).hexdigest()
+            self_declared_count = response.text.split('\n', 1)[0]
+            real_count = len(response.text.splitlines()) - 1
+            if self_declared_count != real_count:
+                msg = f"[{filename}] Declared waypoints count {self_declared_count} does not match real waypoints count {real_count}"
+                logger.warning(msg); raise Exception(msg)
+            self.count = real_count
+            if base64: self.base64 = urlsafe_b64encode(self.file.encode("utf-8")).decode("utf-8") if base64 else None
+        else: self.md5 = None;self.count = None;self.base64 = None
         return self
     
     def get_mapname(self) -> str: return Waypoints.get_mapname(self.filename)
@@ -90,12 +98,13 @@ class Waypoints:
     def from_dict(obj: Any) -> 'Waypoints':
         if obj is None: return None
         _filename = get_safe(obj, "filename")
-        _file = get_safe(obj, "file") # todo: remove
         _url = get_safe(obj, "url")
         _md5 = get_safe(obj, "md5")
         _count = get_safe(obj, "count")
+        if _count: _count = int(_count) # todo: remove
+        if _count and not isinstance(_count, int): _msg = f"Waypoints count is an {type(_count)} (excpected: int): \"{_count}\""; logger.warning(_msg); raise Exception(_msg)
         _base64 = get_safe(obj, "base64")
-        return Waypoints(filename=_filename, file=_file, url=_url, md5=_md5, count=_count, base64=_base64) # todo: remove
+        return Waypoints(filename=_filename, url=_url, md5=_md5, count=_count, base64=_base64) # todo: remove
 
 @dataclass
 class MapListMap:

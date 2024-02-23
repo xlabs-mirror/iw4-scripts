@@ -21,7 +21,10 @@ basicConfig(level=DEBUG)
 
 dir = Path("P:\Python\iw4\iw4-resources")
 
-maplist = Maplist.load(dir / "maps_out.json")
+# maplist_file = dir / "maps.json"
+# exit(0)
+
+maplist = Maplist.load(dir / "maps.json")
 logger.info(f"Loaded {maplist}")
 
 campaignlist = CampaignList.load(dir / "campaign.json")
@@ -121,13 +124,19 @@ for txtmap in txtlist:
 #     map.title = map.name
 #     map.name = None
 
-# for mapname, map in maplist.maps.items():
-#     for act in campaignlist.Acts:
-#         for mission in act.missions:
-#             if mission.mapname == mapname:
-#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
-#                 map.title['english'] = f"{mission.title['english']} (#{mission.index})"
-#                 break
+for mapname, map in maplist.maps.items():
+    for act in campaignlist.Acts:
+        for mission in act.missions:
+            if mission.mapname == mapname:
+                logger.debug(f"Found mission {mission.title} for map {mapname}")
+                # map.title['english'] = f"{mission.title['english']} (#{mission.index})"
+                map.index = mission.index
+                break
+    for act in specopslist.Acts:
+        for mission in act.missions:
+            if mission.mapname == mapname:
+                logger.debug(f"Found mission {mission.title} for map {mapname}")
+                map.index = mission.index
 
 # for mapname, alternatives in alternatives_dict.items():
 #     if not mapname in maplist.maps.keys():
@@ -148,6 +157,6 @@ for txtmap in txtlist:
 
 for mapname, map in maplist.maps.items():
     if map.waypoints:
-        map.waypoints.file = f"{mapname}_wp.csv"
+        map.waypoints.filename = Waypoints.get_filename(mapname)
 
-maplist.save('P:\Python\iw4\iw4-resources\maps_out2.json')
+maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')
