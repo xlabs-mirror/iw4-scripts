@@ -7,10 +7,12 @@ from maplist.campaign import Mission
 from parser.stringmap import StringMaps
 from maplist.source import Source
 from maplist.image import Preview, Loadscreen, Minimap
+from maplist.campaign import CampaignList
+from maplist.specops import SpecOpsList
 from utils import get_safe
 
 @dataclass
-class Name:
+class Title:
     @staticmethod
     def from_mapname(mapname: str, strmap:StringMaps = None) -> dict[str, str]:
         nomp = mapname.replace("mp_", "")
@@ -29,13 +31,13 @@ class Name:
 
 class Description:
     @staticmethod
-    def from_name(displayname: str, strmap:StringMaps = None, source = None) -> dict[str, str]:
-        english = f"{displayname} is a map for Call of Duty: Modern Warfare 2."
+    def from_name(title: str, strmap:StringMaps = None, source = None) -> dict[str, str]:
+        english = f"{title} is a map for Call of Duty: Modern Warfare 2."
         if source:
-            if source == "Custom Maps": english = f"{displayname} is a custom map."
-            else: english = f"{displayname} is a map from {source}."
+            if source == "Custom Maps": english = f"{title} is a custom map."
+            else: english = f"{title} is a map from {source}."
         ret = {
-            "_key": f"MPUI_DESC_MAP_{displayname.upper().replace(' ', '_')}",
+            "_key": f"MPUI_DESC_MAP_{title.upper().replace(' ', '_')}",
             "english": english,
         }
         if strmap:
@@ -80,40 +82,68 @@ class Waypoints:
 
 @dataclass
 class MapListMap:
+    index: Optional[int] = None
+    mapname: Optional[str] = None
     source: Optional[Source] = None
-    name: Optional[dict[str,str]] = None
+    title: Optional[dict[str,str]] = None
     description: Optional[dict[str,str]] = None
     preview: Optional[Preview] = None
     loadscreen: Optional[Loadscreen] = None
     minimap: Optional[Minimap] = None
     waypoints: Optional[Waypoints] = None
-    mission: Optional[Mission] = None
-    alternatives: Optional[list[str]] = None
+    alternatives: Optional[dict[str,str]] = None
 
     @staticmethod
-    def from_mapname(name: str, source: Source = None, strmap:StringMaps = None) -> 'MapListMap':
-        displayname = Name.from_mapname(name, strmap)
+    def from_mapname(mapname: str, source: Source = None, strmap:StringMaps = None) -> 'MapListMap':
+        title = Title.from_mapname(mapname, strmap)
         return MapListMap(
+            index=None,
+            mapname=mapname,
             source=source,
-            name=displayname,
-            description=Description.from_name(displayname=displayname['english'], strmap=strmap, source=source),
-            preview=Preview.from_mapname(name),
-            loadscreen=Loadscreen.from_mapname(name),
-            minimap=Minimap.from_name(name),
-            waypoints=Waypoints.from_mapname(name)
+            title=title,
+            description=Description.from_name(displayname=title['english'], strmap=strmap, source=source),
+            preview=Preview.from_mapname(mapname),
+            loadscreen=Loadscreen.from_mapname(mapname),
+            minimap=Minimap.from_mapname(mapname),
+            waypoints=Waypoints.from_mapname(mapname)
         )
 
     @staticmethod
     def from_dict(obj: Any) -> 'MapListMap':
         if obj is None: return None
+        _index = get_safe(obj, "index")
+        _mapname = get_safe(obj, "mapname")
+        _title = get_safe(obj, "title")
+        _description = get_safe(obj, "description")
         _source = Source.from_dict(get_safe(obj, "source"))
         # except: _source = Source(SourceID.from_dict(get_safe(obj, "source")))
-        _name = get_safe(obj, "name")
-        _description = get_safe(obj, "description")
         _preview = Preview.from_dict(get_safe(obj, "preview"))
         _loadscreen = Loadscreen.from_dict(get_safe(obj, "loadscreen"))
         _minimap = Minimap.from_dict(get_safe(obj, "minimap"))
         _waypoints = Waypoints.from_dict(get_safe(obj, "waypoints"))
-        _mission = Mission.from_dict(get_safe(obj, "mission"))
         _alternatives = get_safe(obj, "alternatives")
-        return MapListMap(_source, _name, _description, _preview, _loadscreen, _minimap, _waypoints, _mission, _alternatives)
+        return MapListMap(index=_index, mapname=_mapname, title=_title, source=_source, description=_description, preview=_preview, loadscreen=_loadscreen, minimap=_minimap, waypoints=_waypoints, alternatives=_alternatives)
+
+    def update(self) -> 'MapListMap':
+        if self.preview: self.preview.update()
+        else: self.preview = Preview.from_mapname(self.mapname)
+        if self.loadscreen: self.loadscreen.update()
+        else: self.loadscreen = Loadscreen.from_mapname(self.mapname)
+        if self.minimap: self.minimap.update()
+        else: self.minimap = Minimap.from_mapname(self.mapname)
+        if self.waypoints: self.waypoints.update()
+        else: self.waypoints = Waypoints.from_mapname(self.mapname)
+        return self
+    
+    def get_campaign_mission(self, campaign: CampaignList) -> Mission:
+        for act in campaign.Acts:
+            for mission in act.missions:
+                if mission.mapname == self.mapname:
+                    return mission
+        return None
+    def get_specops_mission(self, specops: SpecOpsList) -> Mission:
+        for act in specops.Acts:
+            for mission in act.missions:
+                if mission.mapname == self.mapname:
+                    return mission
+        return None

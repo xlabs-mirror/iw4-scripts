@@ -3,6 +3,10 @@ from dataclasses import dataclass
 from json import dumps, load
 from utils import get_safe
 from maplist.image import Preview
+try: from maplist import Maplist
+except: pass
+try: from maplist.map import MapListMap
+except: pass
     
 
 @dataclass
@@ -54,9 +58,9 @@ class CampaignMission(Mission):
     location: Union[Location, str]
     date: Optional[str]
 
-    def __init__(self, index: int, name: str, mapname: str, description: str, location: Union[Location, str], date: str, preview: Preview) -> None:
+    def __init__(self, index: int, title: str, mapname: str, description: str, location: Union[Location, str], date: str, preview: Preview) -> None:
         self.index = index
-        self.name = name
+        self.title = title
         self.mapname = mapname
         self.description = description
         self.location = location
@@ -67,7 +71,7 @@ class CampaignMission(Mission):
     def from_dict(obj: Any) -> 'CampaignMission':
         if not obj: return None
         _index = get_safe(obj, "index")
-        _name = get_safe(obj, "name")
+        _title = get_safe(obj, "title")
         _mapname = get_safe(obj, "mapname")
         _description = get_safe(obj, "description")
         _location = get_safe(obj, "location")
@@ -75,25 +79,31 @@ class CampaignMission(Mission):
             _location = Location.from_dict(get_safe(obj, "location"))
         _date = get_safe(obj, "date")
         _preview = Preview.from_dict(get_safe(obj, "preview"))
-        return CampaignMission(_index, _name, _mapname, _description, _location, _date, _preview)
+        return CampaignMission(index=_index, title=_title, mapname=_mapname, description=_description, location=_location, date=_date, preview=_preview)
+    
+    def get_map(self, maplist: 'Maplist') -> 'MapListMap':
+        return maplist.maps[self.mapname] if self.mapname in maplist.get_mapnames() else None
 
 class CampaignAct:
-    name: Optional[dict[str,str]]
+    title: Optional[dict[str,str]]
     description: Optional[dict[str,str]]
     missions: List[CampaignMission]
 
-    def __init__(self, name: dict[str,str], description: dict[str,str], missions: list[CampaignMission]) -> None:
-        self.name = name
+    def __init__(self, title: dict[str,str], description: dict[str,str], missions: list[CampaignMission]) -> None:
+        self.title = title
         self.description = description
         self.missions = missions
 
     @staticmethod
     def from_dict(obj: Any) -> 'CampaignAct':
         if not obj: return None
-        _name = get_safe(obj, "name")
+        _title = get_safe(obj, "name")
+        if _title and not isinstance(_title, dict): raise ValueError(f"Invalid type {type(_title)} for title {_title}")
         _description = get_safe(obj, "description")
+        if _description and not isinstance(_description, dict): raise ValueError(f"Invalid type {type(_description)} for description {_description}")
         _missions = [CampaignMission.from_dict(y) for y in get_safe(obj, "missions")]
-        return CampaignAct(_name, _description, _missions)
+        if _missions and len(_missions) > 0 and not isinstance(_missions[0], CampaignMission): raise ValueError(f"Invalid type {type(_missions[0])} for missions[0] {_missions[0]}")
+        return CampaignAct(title=_title, description=_description, missions=_missions)
 
 @dataclass
 class CampaignList:
@@ -116,7 +126,7 @@ class CampaignList:
     
     def save(self, file: str = 'campaigns.json'):
         json = dumps(
-            {self.Acts},
+            self.Acts,
             default=lambda o: dict((key, value) for key, value in o.__dict__.items() if value),
             sort_keys=True,
             indent=4,
@@ -129,3 +139,22 @@ class CampaignList:
     
     def __str__(self) -> str:
         return f"{sum(len(act.missions) for act in self.Acts)} missions from {len(self.Acts)} campaign acts"
+    
+    def get_by_mapname(self, mapname: str) -> tuple[CampaignMission, CampaignAct]:
+        for act in self.Acts:
+            for mission in act.missions:
+                if mission.mapname == mapname:
+                    return mission, act
+        return None, None
+    def get_by_title(self, title: str, language: str = "english") -> tuple[CampaignMission, CampaignAct]:
+        for act in self.Acts:
+            for mission in act.missions:
+                if language in mission.title and mission.title[language] == title:
+                    return mission, act
+        return None, None
+    def get_by_index(self, index: int) -> tuple[CampaignMission, CampaignAct]:
+        for act in self.Acts:
+            for mission in act.missions:
+                if mission.index == index:
+                    return mission, act
+        return None, None

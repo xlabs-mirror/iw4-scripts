@@ -8,9 +8,13 @@ from json import dumps as json_dumps, load as json_load
 from logging import getLogger, basicConfig, DEBUG
 from maplist import Maplist
 from maplist.map import MapListMap, Preview, Loadscreen, Minimap, Waypoints
-from maplist.campaign import CampaignList, CampaignMission, Location, Mission
+from maplist.campaign import CampaignList, CampaignMission, Location, Mission, CampaignAct
 from maplist.source import Source, SourceID
-from maplist.specops import SpecOpsList, SpecOpsMission
+from maplist.specops import SpecOpsList, SpecOpsMission, SpecOpsAct
+
+def load_maps(file, as_json = False):
+    with open(file, 'r') as f:
+        return f.read().splitlines() if not as_json else json_load(f)
 
 logger = getLogger(__name__)
 basicConfig(level=DEBUG)
@@ -31,27 +35,39 @@ logger.info(f"Loaded {specopslist}")
 
 # for lang, strings in stringmaps.strings.items():
 #     print(lang, len(strings))
-
-def load_maps(file, as_json = False):
-    with open(file, 'r') as f:
-        return f.read().splitlines() if not as_json else json_load(f)
     
 txtlist = load_maps(dir / "maps.txt")
 logger.info(f"Loaded {len(txtlist)} txt maps")
-alternatives_list = load_maps(dir / "alternatives.json", True)
-logger.info(f"Loaded {len(alternatives_list)} alternatives")
+alternatives_dict: dict[str, list[str]] = load_maps(dir / "alternatives.json", True)
+logger.info(f"Loaded {len(alternatives_dict)} alternatives")
 
-def set_maps_source(file, source, stringmaps = None):
-    map_array = load_maps(file)
-    for mapname in map_array:
-        if mapname not in maplist.maps:
-            maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
-        maplist.maps[mapname].source = source
+for act in campaignlist.Acts:
+    for i, mission in enumerate(act.missions):
+        if mission.mapname:
+            if mission.mapname not in maplist.maps.keys():
+                logger.warning(f"Missing map {mission.mapname} for campaign mission {mission.title}")
 
-def add_maps(file, source, stringmaps = None):
-    map_array = load_maps(file)
-    for mapname in map_array:
-        maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
+for specopsact in specopslist.Acts:
+    for i, mission in enumerate(specopsact.missions):
+        if mission.mapname:
+            if mission.mapname not in maplist.maps.keys():
+                logger.warning(f"Missing map {mission.mapname} for specops mission {mission.title}")
+
+for txtmap in txtlist:
+    if txtmap not in maplist.maps.keys():
+        print(f"Missing txtmap {txtmap}")
+
+# def set_maps_source(file, source, stringmaps = None):
+#     map_array = load_maps(file)
+#     for mapname in map_array:
+#         if mapname not in maplist.maps:
+#             maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
+#         maplist.maps[mapname].source = source
+
+# def add_maps(file, source, stringmaps = None):
+#     map_array = load_maps(file)
+#     for mapname in map_array:
+#         maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
 
 
 # add_maps('maps_main.txt', Source("Call of Duty: Modern Warfare 2"), stringmaps)
@@ -89,27 +105,47 @@ def add_maps(file, source, stringmaps = None):
 # mission_mapnames = [mission.mapname for act in campaignlist.Acts.values() for mission in act if mission.mapname]
 
 # mapnames = [mapname for mapname in maplist.maps]
-
-# for txtmap in txtlist:
-#     if txtmap not in mapnames:
-#         print(f"Missing {txtmap}")
-
-# for mapname, map in maplist.maps.items():
+        
     # if source url is list turn from [ "https", "tinyurl.com", "/iw4xmaps", "", "", "" ] to normal url
     # $map["source"]["url"] = $source_url[0] . "://" . $source_url[1] . $source_url[2];
-    # for campaign_name, campaign in campaignlist.Acts.items():
-    #     for mission in campaign:
-    #         if mission.mapname == mapname:
-    #             logger.debug(f"Found mission {mission.name} for map {mapname}")
-    #             map.mission = mission
-    #             map.mission.mapname = None
-    #             break
 
-# for campaign_name, campaign in campaignlist.Acts.items():
-#     for i, mission in enumerate(campaign):
-#         if mission.mapname:
-#             if mission.mapname not in maplist.maps.keys():
-#                 logger.warning(f"Missing map {mission.mapname} for mission {mission.name}")
+# for act in campaignlist.Acts:
+#     for i, mission in enumerate(act.missions):
+#         mission.name = {"english": mission.name}
+#         mission.description = {"english": mission.description}
+
+# campaignlist.save('P:\Python\iw4\iw4-resources\campaigns_out.json')
+
+# for mapname, map in maplist.maps.items():
+#     map.mapname = mapname
+#     map.title = map.name
+#     map.name = None
+
+# for mapname, map in maplist.maps.items():
+#     for act in campaignlist.Acts:
+#         for mission in act.missions:
+#             if mission.mapname == mapname:
+#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
+#                 map.title['english'] = f"{mission.title['english']} (#{mission.index})"
+#                 break
+
+# for mapname, alternatives in alternatives_dict.items():
+#     if not mapname in maplist.maps.keys():
+#         logger.warning(f"Map {mapname} not found in maplist")
+#         raise Exception(f"Map {mapname} not found in maplist")
+#     alt_dict = {}
+#     for alternative in alternatives:
+#         alt_dict[alternative] = ""
+#         mission, act = specopslist.get_by_mapname(alternative)
+#         if mission:
+#             alt_dict[alternative] = f"Spec Ops {act.title['english']}: {mission.title['english']} (#{mission.index})"
+#         mission, act = campaignlist.get_by_mapname(alternative)
+#         if mission:
+#             alt_dict[alternative] = f"Campaign {act.title['english']}: {mission.title['english']} (#{mission.index})"
+#     maplist.maps[mapname].alternatives = alt_dict
+
+# maplist.update()
+
 
 
 maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')

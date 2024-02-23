@@ -26,14 +26,6 @@ class Maplist:
     game: str
     maps: dict[str,'MapListMap']
 
-    def get_maps_by_source(self):
-        maps = {}
-        for mapname, map in self.maps.items():
-            if map.source not in maps:
-                maps[map.source] = {}
-            maps[map.source][mapname] = map
-        return maps
-
     @staticmethod
     def from_dict(obj: dict) -> 'Maplist':
         maps = {}
@@ -67,7 +59,7 @@ class Maplist:
             
             return result_dict
 
-        def recursive_iterate_dict(d):
+        def recursive_iterate_dict(d: dict):
             for key, value in d.items():
                 if isinstance(value, dict):
                     recursive_iterate_dict(value)
@@ -92,3 +84,18 @@ class Maplist:
     
     def __str__(self) -> str:
         return f"{len(self.maps)} maps from {len(self.get_maps_by_source())} sources"
+
+    def get_maps_by_source(self):
+        maps = {}
+        for mapname, map in self.maps.items():
+            if map.source not in maps:
+                maps[map.source] = {}
+            maps[map.source][mapname] = map
+        return maps
+    
+    def get_mapnames(self):
+        return list(self.maps.keys())
+    
+    def update(self) -> None:
+        for map in self.maps.values():
+            map.update()

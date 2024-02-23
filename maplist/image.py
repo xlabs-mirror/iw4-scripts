@@ -78,7 +78,7 @@ class Loadscreen(Image):
 class Minimap(Image):
     
     @staticmethod
-    def from_name(mapname: str) -> 'Minimap':
+    def from_mapname(mapname: str) -> 'Minimap':
         _name = f"compass_map_{mapname.lower()}"
         return Minimap(name=_name, url=None, base64=None).update()
 
