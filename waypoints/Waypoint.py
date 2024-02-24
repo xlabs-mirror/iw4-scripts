@@ -8,8 +8,7 @@ if TYPE_CHECKING:
     from .Waypoint import Waypoint
     from .WaypointFile import WaypointFile
 
-from logging import getLogger, basicConfig, DEBUG, INFO
-basicConfig(level=INFO)
+from logging import getLogger
 logger = getLogger(__name__)
 
 zeroVector = Vector3(0, 0, 0)
@@ -49,10 +48,22 @@ class Waypoint:
         return self.uuid == other.uuid
     def __hash__(self) -> int:
         return hash(self.hashstr())
-    def hashstr(self) -> str: return dumps([str(self.position), len(self.connections), self.type.name, str(self.angle), str(self.target)])
+    def hashstr(self) -> str:
+        pos = str(self.position)
+        connlen = len(self.connections)
+        type = self.type.name
+        angle = str(self.angle)
+        target = str(self.target)
+        return dumps([pos, connlen, type, angle, target])
     def index(self) -> int:
         if hasattr(self, 'file'):
-            return self.file.waypoints.index(self) # +1
+            try:
+                # logger.debug(f"trying to get index of {self} in {self.file}")
+                index = self.file.waypoints.index(self)
+                # logger.debug(f"got index {index} + 1")
+                return index + 1
+            except Exception as ex: logger.error(f"Waypoint {self} not found in file {self.file}??? ({ex})")
+        return None
 
     def __init__(self, index:int, position:Vector3, connections:list['Waypoint'], type:WaypointType, angle:Vector3, target:Vector3, file:'WaypointFile'):
         self._index = index
@@ -66,7 +77,18 @@ class Waypoint:
         self.file = file
 
     def __repr__(self, connections=False) -> str:
-        return f"Waypoint(uuid={self.uuid}, hash={self.__hash__()}, _i={self._index}, i={self.index()}, pos={self.position}, conns={self.connections_str() if connections else len(self.connections)}, type={self.type.name}, angle={self.angle}, target={self.target})"
+        uuid = self.uuid
+        hash = self.__hash__()
+        _i = self._index
+        try: i = self.index()
+        except Exception as ex: logger.error(f"Index not found for {self}: {ex}")
+        pos = self.position
+        conns = self.connections_str() if connections else len(self.connections)
+        type = self.type.name
+        angle = self.angle
+        target = self.target
+        return f"Waypoint(uuid={uuid}, hash={hash}, _i={_i}, i={i}, pos={pos}, conns={conns}, type={type}, angle={angle}, target={target})"
+        # return f"Waypoint(uuid={self.uuid}, hash={self.__hash__()}, _i={self._index}, i={self.index()}, pos={self.position}, conns={self.connections_str() if connections else len(self.connections)}, type={self.type.name}, angle={self.angle}, target={self.target})"
 
     def __str__(self) -> str:
         return f"WP|{self.uuid}|{self.__hash__()}|{self.index()}|{self.position}|{self.connections_str()}|{self.type.name}|{self.angle}|{self.target}"
@@ -95,8 +117,18 @@ class Waypoint:
         return [f+"," for f in self.to_list()[:-1]]
 
     def to_list(self):
-        connections = ' '.join([str(c.index()) for c in self.connections])
-        return [vectorStr(self.position), connections, self.type.value, vectorStr(self.angle), vectorStr(self.target), ""]
+        selfpos = vectorStr(self.position)
+        connections = ' ' # .join([str(c.index()) for c in self.connections])
+        for conn in self.connections:
+            logger.debug(f"conn: {conn}")
+            if conn.index() is not None:
+                logger.debug(f"conn.index(): {conn.index()}")
+                connections += f"{conn.index()} "
+                logger.debug(f"connections: {connections}")
+        typeval = self.type.value
+        angle = vectorStr(self.angle)
+        target = vectorStr(self.target)
+        return [selfpos, connections, typeval, angle, target, ""]
 
     def to_row(self) -> str:
         return (",".join(self.to_list())).strip()
@@ -134,6 +166,12 @@ class Waypoint:
                 except Exception as ex:
                     msg = f"Invalid waypoint connection #{i}: {c} in row {index} of {file.path.name}"
                     logger.error(msg)
+        if len(connections):
+            for connection in connections:
+                if connection == index-1:
+                    msg = f"Connection {connection} is connected to itself in row {index} of {file.path.name}"
+                    logger.error(msg)
+                    # connections.remove(connection)
         target = Vector3([float(p) for p in row[4].split(' ')]) if row[4] else None
         wp_type = row[2]
         try: wp_type = WaypointType(wp_type)

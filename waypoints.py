@@ -6,6 +6,20 @@ syspath.append(getcwd())
 from waypoints.WaypointFile import WaypointFile, SortingMethod
 from waypoints.Waypoint import zeroVector, WaypointType
 
+from logging import getLogger, StreamHandler, FileHandler, Formatter, DEBUG, INFO
+logger = getLogger()
+logger.setLevel(DEBUG)
+formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch = StreamHandler()
+ch.setLevel(INFO)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+fh = FileHandler('waypoints.log')
+fh.setLevel(DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+fix = True
 ask_input = False
 wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
 
@@ -13,6 +27,9 @@ errs = 0
 files = 0
 wps = 0
 for file in wp_dir.glob("*.csv"):
+    if not str(file).endswith("gulag_wp.csv"):
+        continue
+    print(file)
     files += 1
     file = WaypointFile(file, ask_for_user_input=ask_input)
     wps += len(file.waypoints)
@@ -21,11 +38,13 @@ for file in wp_dir.glob("*.csv"):
         # if waypoint.target is not None and waypoint.target == zeroVector:
             # print(waypoint)
 
-    err = file.check(fix=False, ask_for_user_input=ask_input)
+    err = file.check(fix=fix, ask_for_user_input=ask_input)
     errs += err
-    # file.save(file.path, sort=SortingMethod.NONE)
+    if err > 0:
+        logger.debug("err > 0")
+        file.save(file.path, sort=SortingMethod.NONE)
 
-print(f"Checked {files} files with {wps} waypoints, found {errs} errors")
+print(f"Checked {files} files with {wps} waypoints, {'fixed'if fix else'found'} {errs} errors")
     
 
 # file = WaypointFile(r"G:\Steam\steamapps\common\Call of Duty Modern Warfare 2\userraw\scriptdata\waypoints\mp_plaza2_wp__.csv", ask_for_user_input=ask_input)

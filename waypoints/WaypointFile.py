@@ -8,8 +8,7 @@ from tabulate import tabulate
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from .WaypointFile import WaypointFile
 
-from logging import getLogger, basicConfig, DEBUG, INFO
-basicConfig(level=INFO)
+from logging import getLogger
 logger = getLogger(__name__)
 
 class SortingMethod(Enum):
@@ -67,38 +66,46 @@ class WaypointFile:
 
     def check(self, fix=False, ask_for_user_input=False, keep_connections=-1) -> int:
         errors = self.check_count(fix=fix, ask_for_user_input=ask_for_user_input)
+        new_waypoints = []
         for waypoint in self.waypoints:
+            logger.debug(f"Checking {waypoint.shortstr()} ({waypoint})")
+            new_waypoint = copy(waypoint)
             # errors += waypoint.check(fix=fix, ask_for_user_input=ask_for_user_input)
             for i, connection in enumerate(waypoint.connections):
                 con_index = connection.index()
                 if con_index > len(self.waypoints):
                     errors += 1; logger.error(f"{waypoint.shortstr()} connection {connection} is over {len(self.waypoints)}")
-                    if fix: waypoint.connections.remove(connection)
+                    if fix: new_waypoint.connections.remove(connection)
                 elif con_index < 0:
                     errors += 1; logger.error(f"{waypoint.shortstr()} connection {connection} is under zero")
-                    if fix: waypoint.connections.remove(connection)
+                    if fix: new_waypoint.connections.remove(connection)
                 if connection == waypoint:
                     errors += 1; logger.error(f"{waypoint.shortstr()} connection {connection} is itself")
-                    if fix: waypoint.connections.remove(connection)
+                    if fix: new_waypoint.connections.remove(connection)
             if waypoint.position == zeroVector:
                 errors += 1; logger.error(f"{waypoint.shortstr()} position is zero")
-                if fix: self.waypoints.remove(waypoint); continue
+                if fix: continue
             if waypoint.type is None:
                 errors += 1; logger.error(f"{waypoint.shortstr()} has no type")
-                if fix: self.waypoints.remove(waypoint); continue
+                if fix: continue
             if waypoint.type in [WaypointType.JUMP, WaypointType.MANTLE]:
                 logger.warn(f"{waypoint.shortstr()} has weird type {waypoint.type.name}")
-                # if fix: self.waypoints.remove(waypoint); continue
+                # if fix: continue
             if not isinstance(waypoint.type, WaypointType) or waypoint.type not in WaypointType.__members__.values():
                 logger.warn(f"{waypoint.shortstr()} has non-existant type {waypoint.type.name}")
-                # if fix: self.waypoints.remove(waypoint); continue
+                # if fix: continue
             if len(waypoint.connections) < 1:
                 errors += 1; logger.error(f"{waypoint.shortstr()} has no connections")
-                if fix: self.waypoints.remove(waypoint); continue
+                if fix: continue
             elif keep_connections > -1:
-                waypoint.connections = waypoint.connections[:keep_connections]
+                new_waypoint.connections = waypoint.connections[:keep_connections]
+            if new_waypoint: new_waypoints.append(new_waypoint)
+        logger.debug("1")
+        self.waypoints = new_waypoints
+        logger.debug("2")
         if ask_for_user_input:
             input(f"{'Fixed'if fix else 'Found'} {errors} errors. Press enter to continue...")
+        logger.debug("3")
         return errors
 
     def merge_from(self, other:'WaypointFile'):
@@ -126,6 +133,7 @@ class WaypointFile:
                     raise Exception(f"[{i}] Invalid row length: {len(parts)}")
                 row = [r.strip() for r in parts]
                 self.rows.append(row)
+                logger.debug(f"Loaded row {i}: {row}")
                 self.waypoints.append(Waypoint.from_row(i, row, self))
             if (len(headers) > 0 and headers[0].isdigit()):
                 self._count = int(headers[0])
@@ -142,28 +150,28 @@ class WaypointFile:
             for connection in connections:
                 connection += offset + 1 # +1 because of zero index
                 # if connection == 0: connection = 1
-                # if connection > len(self.waypoints):
-                #     logger.info(f"{waypoint.shortstr()} Connection {connection} is over {len(self.waypoints)}!")
-                #     if ask_for_user_input and not skip_all and not skip_all_for_wp:
-                #         a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
-                #         if a == 'a': skip_all = True
-                #         elif a == 'w': skip_all_for_wp = True
-                #     continue
-                # if connection < 0:
-                #     logger.info(f"WARNING: Waypoint {waypoint.uuid} Connection {connection} is under zero!")
-                #     if ask_for_user_input and not skip_all and not skip_all_for_wp:
-                #         a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
-                #         if a == 'a': skip_all = True
-                #         elif a == 'w': skip_all_for_wp = True
-                #         continue
-                # target = self.waypoints[connection-1]
-                # if target == waypoint:
-                #     logger.info(f"WARNING: Waypoint {waypoint.uuid} Connection {connection} target is itself!")
-                #     if ask_for_user_input and not skip_all and not skip_all_for_wp:
-                #         a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
-                #         if a == 'a': skip_all = True
-                #         elif a == 'w': skip_all_for_wp = True
-                #         continue
+                if connection > len(self.waypoints):
+                    logger.info(f"{waypoint.shortstr()} Connection {connection} is over {len(self.waypoints)}!")
+                    if ask_for_user_input and not skip_all and not skip_all_for_wp:
+                        a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
+                        if a == 'a': skip_all = True
+                        elif a == 'w': skip_all_for_wp = True
+                    continue
+                if connection < 0:
+                    logger.info(f"WARNING: Waypoint {waypoint.uuid} Connection {connection} is under zero!")
+                    if ask_for_user_input and not skip_all and not skip_all_for_wp:
+                        a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
+                        if a == 'a': skip_all = True
+                        elif a == 'w': skip_all_for_wp = True
+                        continue
+                target = self.waypoints[connection-1]
+                if target == waypoint:
+                    logger.info(f"WARNING: Waypoint {waypoint.uuid} Connection {connection} target is itself!")
+                    if ask_for_user_input and not skip_all and not skip_all_for_wp:
+                        a = input("Skip? (a)ll/(w)aypoint/(c)onnection: ").lower()
+                        if a == 'a': skip_all = True
+                        elif a == 'w': skip_all_for_wp = True
+                        continue
                 waypoint.connections.append(target)
             # logger.info(f"Converted {len(connections)} connections for {waypoint.uuid}")
             skip_all_for_wp = False
@@ -174,12 +182,14 @@ class WaypointFile:
         return [wp.to_str() for wp in self.waypoints]
 
     def to_rows(self) -> list[str]:
+        logger.debug("to_rows")
         return [wp.to_row() for wp in self.waypoints]
 
     def save(self, path:Path=None, sort:SortingMethod=SortingMethod.NONE, tabs:bool=False):
         if path is None: path = self.path
         if (not path is type(Path)): path = Path(path)
         waypoints = self.waypoints
+        logger.debug("sorting")
         if sort is not SortingMethod.NONE:
             logger.info("Sorting",len(waypoints),"waypoints by",sort.name)
             match sort:
@@ -189,6 +199,7 @@ class WaypointFile:
                     waypoints.sort(key=lambda x: x.distance_to(waypoints[0]))
                 case SortingMethod.DISTANCE_TO_LAST:
                     waypoints.sort(key=lambda x: x.distance_to(waypoints[-1]))
+        logger.debug("sorted")
         with path.open('w', newline='') as csvfile:
             csvfile.write(f"{len(waypoints)}\n")
             if tabs:
