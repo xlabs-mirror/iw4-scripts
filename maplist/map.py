@@ -60,8 +60,8 @@ class Description:
 @dataclass
 class Waypoints(FileBase):
     count: Optional[int] = None
-    def update(self, base64 = False, map: 'MapListMap' = None) -> 'Waypoints':
-        filename = self.filename or self.get_filename(map.mapname) if map else None
+    def update(self, mapname: str = None, base64 = False, map: 'MapListMap' = None) -> 'Waypoints':
+        filename = self.filename or self.get_filename(mapname) or self.get_filename(map.mapname) or None
         if not filename: raise Exception("No filename for waypoints file!")
         urls = [
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/waypoints/{filename}",
@@ -128,7 +128,7 @@ class MapListMap:
             mapname=mapname,
             source=source,
             title=title,
-            description=Description.from_name(displayname=title['english'], strmap=strmap, source=source),
+            description=Description.from_name(title=title['english'], strmap=strmap, source=source),
             preview=Preview.from_mapname(mapname),
             loadscreen=Loadscreen.from_mapname(mapname),
             minimap=Minimap.from_mapname(mapname),

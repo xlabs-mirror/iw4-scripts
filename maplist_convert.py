@@ -20,7 +20,7 @@ def load_maps(file, as_json = False):
 
 logger = getLogger(__name__)
 basicConfig(level=DEBUG)
-
+#region loading
 dir = Path("P:\Python\iw4\iw4-resources")
 
 # maplist_file = dir / "maps.json"
@@ -45,37 +45,44 @@ txtlist = load_maps(dir / "maps.txt")
 logger.info(f"Loaded {len(txtlist)} txt maps")
 alternatives_dict: dict[str, list[str]] = load_maps(dir / "alternatives.json", True)
 logger.info(f"Loaded {len(alternatives_dict)} alternatives")
-
+#endregion loading
+#region check_missing
 for act in campaignlist.Acts:
     for i, mission in enumerate(act.missions):
         if mission.mapname:
             if mission.mapname not in maplist.maps.keys():
                 logger.warning(f"Missing map {mission.mapname} for campaign mission {mission.title}")
-
 for act in specopslist.Acts:
     for i, mission in enumerate(act.missions):
         if mission.mapname:
             if mission.mapname not in maplist.maps.keys():
                 logger.warning(f"Missing map {mission.mapname} for specops mission {mission.title}")
-
 mission = act = i = None                
-
 for txtmap in txtlist:
     if txtmap not in maplist.maps.keys():
         print(f"Missing txtmap {txtmap}")
+#endregion check_missing
+# region map_related_methods
+def set_maps_source(file, source, stringmaps = None):
+    map_array = load_maps(file)
+    for mapname in map_array:
+        if mapname not in maplist.maps:
+            maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
+        maplist.maps[mapname].source = source
 
-# def set_maps_source(file, source, stringmaps = None):
-#     map_array = load_maps(file)
-#     for mapname in map_array:
-#         if mapname not in maplist.maps:
-#             maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
-#         maplist.maps[mapname].source = source
+def add_maps(file, source, stringmaps = None):
+    map_array = load_maps(file)
+    for mapname in map_array:
+        maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
 
-# def add_maps(file, source, stringmaps = None):
-#     map_array = load_maps(file)
-#     for mapname in map_array:
-#         maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
-
+def get_map_subtitle(mapname):            
+    campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
+    if campaign_mission: return f"Campaign {campaign_act.title['english']}: {campaign_mission.title['english']} (#{campaign_mission.index})"
+    specops_mission, specops_act = specopslist.get_by_mapname(mapname)
+    if specops_mission: return f"Spec Ops {specops_act.title['english']}: {specops_mission.title['english']} (#{specops_mission.index})"
+    mainmap = maplist.maps[mapname]
+    return (f"{mainmap.source.name}: " if mainmap.source.name else "") + f"{mainmap.title['english']}" + (f" (#{mainmap.index})" if mainmap.index else "")
+#endregion map_related_methods
 
 # add_maps('maps_main.txt', Source("Call of Duty: Modern Warfare 2"), stringmaps)
 # add_maps('maps_dlc_stimulus.txt', Source("Stimulus DLC", "https://tinyurl.com/iw4xmaps"), stringmaps)
@@ -147,43 +154,33 @@ for txtmap in txtlist:
 #     if map.alternatives and isinstance(map.alternatives, list):
 #         map.alternatives = {alternative: "" for alternative in map.alternatives}
 
-def get_map_subtitle(mapname):            
-    campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
-    if campaign_mission: return f"Campaign {campaign_act.title['english']}: {campaign_mission.title['english']} (#{campaign_mission.index})"
-    specops_mission, specops_act = specopslist.get_by_mapname(mapname)
-    if specops_mission: return f"Spec Ops {specops_act.title['english']}: {specops_mission.title['english']} (#{specops_mission.index})"
-    mainmap = maplist.maps[mapname]
-    return (f"{mainmap.source.name}: " if mainmap.source.name else "") + f"{mainmap.title['english']}" + (f" (#{mainmap.index})" if mainmap.index else "")
+# alt_items = alternatives_dict.items()
+# mapnames = maplist.maps.keys()
 
-alt_items = alternatives_dict.items()
-mapnames = maplist.maps.keys()
-
-for mainmapname, alternatives in alt_items:
-    if mainmapname in mapnames:
-        for alternative in alternatives:
-            mainmap = maplist.maps[mainmapname]
-            alternative_map = copy(mainmap)
-            alternative_map.mapname = alternative
+# for mainmapname, alternatives in alt_items:
+#     if mainmapname in mapnames:
+#         for alternative in alternatives:
+#             mainmap = maplist.maps[mainmapname]
+#             alternative_map = copy(mainmap)
+#             alternative_map.mapname = alternative
             
-            new_alternatives = {k: v for k, v in mainmap.alternatives.items()}
+#             new_alternatives = {k: v for k, v in mainmap.alternatives.items()}
 
 
-            del new_alternatives[alternative]
-            new_alternatives[mainmapname] = mainmap.title['english']
+#             del new_alternatives[alternative]
+#             new_alternatives[mainmapname] = mainmap.title['english']
             
-            alternative_map.alternatives = new_alternatives
-            maplist.maps[alternative] = alternative_map
-            logger.debug(f"[{mainmapname}] new alternative: {alternative_map.mapname}")
+#             alternative_map.alternatives = new_alternatives
+#             maplist.maps[alternative] = alternative_map
+#             logger.debug(f"[{mainmapname}] new alternative: {alternative_map.mapname}")
         
 
-for mapname, map in maplist.maps.items():
-    if not map.alternatives: continue
-    if mapname in map.alternatives.keys():
-        del map.alternatives[mapname]
-    for alternative, title in map.alternatives.items():
-        map.alternatives[alternative] = get_map_subtitle(alternative)
-
-# maplist.update()
+# for mapname, map in maplist.maps.items():
+#     if not map.alternatives: continue
+#     if mapname in map.alternatives.keys():
+#         del map.alternatives[mapname]
+#     for alternative, title in map.alternatives.items():
+#         map.alternatives[alternative] = get_map_subtitle(alternative)
 
 # for mapname, map in maplist.maps.items():
 #     if map.preview:
@@ -222,6 +219,11 @@ for mapname, map in maplist.maps.items():
 #                 url=minimap["url"] if "url" in minimap else None
 #             )
 #         )
+
+for txtmap in txtlist:
+    if txtmap not in maplist.maps:
+        maplist.maps[txtmap] = MapListMap.from_mapname(txtmap)
+        maplist.maps[txtmap].source = Source("Unknown", "https://tinyurl.com/iw4xmaps")
 
 # maplist.update()
         
