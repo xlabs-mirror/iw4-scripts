@@ -1,3 +1,4 @@
+from copy import copy
 from pathlib import Path
 from sys import path as syspath
 from os import getcwd
@@ -51,11 +52,13 @@ for act in campaignlist.Acts:
             if mission.mapname not in maplist.maps.keys():
                 logger.warning(f"Missing map {mission.mapname} for campaign mission {mission.title}")
 
-for specopsact in specopslist.Acts:
-    for i, mission in enumerate(specopsact.missions):
+for act in specopslist.Acts:
+    for i, mission in enumerate(act.missions):
         if mission.mapname:
             if mission.mapname not in maplist.maps.keys():
                 logger.warning(f"Missing map {mission.mapname} for specops mission {mission.title}")
+
+mission = act = i = None                
 
 for txtmap in txtlist:
     if txtmap not in maplist.maps.keys():
@@ -139,62 +142,88 @@ for txtmap in txtlist:
 #                 logger.debug(f"Found mission {mission.title} for map {mapname}")
 #                 map.index = mission.index
 
-# for mapname, alternatives in alternatives_dict.items():
-#     if not mapname in maplist.maps.keys():
-#         logger.warning(f"Map {mapname} not found in maplist")
-#         raise Exception(f"Map {mapname} not found in maplist")
-#     alt_dict = {}
-#     for alternative in alternatives:
-#         alt_dict[alternative] = ""
-#         mission, act = specopslist.get_by_mapname(alternative)
-#         if mission:
-#             alt_dict[alternative] = f"Spec Ops {act.title['english']}: {mission.title['english']} (#{mission.index})"
-#         mission, act = campaignlist.get_by_mapname(alternative)
-#         if mission:
-#             alt_dict[alternative] = f"Campaign {act.title['english']}: {mission.title['english']} (#{mission.index})"
-#     maplist.maps[mapname].alternatives = alt_dict
+
+# for mapname, map in maplist.maps.items():
+#     if map.alternatives and isinstance(map.alternatives, list):
+#         map.alternatives = {alternative: "" for alternative in map.alternatives}
+
+def get_map_subtitle(mapname):            
+    campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
+    if campaign_mission: return f"Campaign {campaign_act.title['english']}: {campaign_mission.title['english']} (#{campaign_mission.index})"
+    specops_mission, specops_act = specopslist.get_by_mapname(mapname)
+    if specops_mission: return f"Spec Ops {specops_act.title['english']}: {specops_mission.title['english']} (#{specops_mission.index})"
+    mainmap = maplist.maps[mapname]
+    return (f"{mainmap.source.name}: " if mainmap.source.name else "") + f"{mainmap.title['english']}" + (f" (#{mainmap.index})" if mainmap.index else "")
+
+alt_items = alternatives_dict.items()
+mapnames = maplist.maps.keys()
+
+for mainmapname, alternatives in alt_items:
+    if mainmapname in mapnames:
+        for alternative in alternatives:
+            mainmap = maplist.maps[mainmapname]
+            alternative_map = copy(mainmap)
+            alternative_map.mapname = alternative
+            
+            new_alternatives = {k: v for k, v in mainmap.alternatives.items()}
+
+
+            del new_alternatives[alternative]
+            new_alternatives[mainmapname] = mainmap.title['english']
+            
+            alternative_map.alternatives = new_alternatives
+            maplist.maps[alternative] = alternative_map
+            logger.debug(f"[{mainmapname}] new alternative: {alternative_map.mapname}")
+        
+
+for mapname, map in maplist.maps.items():
+    if not map.alternatives: continue
+    if mapname in map.alternatives.keys():
+        del map.alternatives[mapname]
+    for alternative, title in map.alternatives.items():
+        map.alternatives[alternative] = get_map_subtitle(alternative)
 
 # maplist.update()
 
-for mapname, map in maplist.maps.items():
-    if map.preview:
-        preview = map.preview
-        map.preview = Preview(
-            iwi=IWImage(
-                filename=preview["filename"]
-            ),
-            png=PNGImage(
-                filename=mapname + ".png",
-                md5=preview["md5"] if "md5" in preview else None,
-                url=preview["url"] if "url" in preview else None
-            )
-        )
-    if map.loadscreen:
-        preview = map.loadscreen
-        map.preview = Loadscreen(
-            iwi=IWImage(
-                filename=preview["filename"]
-            ),
-            png=PNGImage(
-                filename=mapname + ".png",
-                md5=preview["md5"] if "md5" in preview else None,
-                url=preview["url"] if "url" in preview else None
-            )
-        )
-    if map.minimap:
-        preview = map.minimap
-        map.minimap = Minimap(
-            iwi=IWImage(
-                filename=preview["filename"]
-            ),
-            png=PNGImage(
-                filename=mapname + ".png",
-                md5=preview["md5"] if "md5" in preview else None,
-                url=preview["url"] if "url" in preview else None
-            )
-        )
+# for mapname, map in maplist.maps.items():
+#     if map.preview:
+#         preview = map.preview
+#         map.preview = Preview(
+#             iwi=IWImage(
+#                 filename=preview["filename"]
+#             ),
+#             png=PNGImage(
+#                 filename=mapname + ".png",
+#                 md5=preview["md5"] if "md5" in preview else None,
+#                 url=preview["url"] if "url" in preview else None
+#             )
+#         )
+#     if map.loadscreen:
+#         loadscreen = map.loadscreen
+#         map.loadscreen = Loadscreen(
+#             iwi=IWImage(
+#                 filename=loadscreen["filename"]
+#             ),
+#             png=PNGImage(
+#                 filename=mapname + ".png",
+#                 md5=loadscreen["md5"] if "md5" in loadscreen else None,
+#                 url=loadscreen["url"] if "url" in loadscreen else None
+#             )
+#         )
+#     if map.minimap:
+#         minimap = map.minimap
+#         map.minimap = Minimap(
+#             iwi=IWImage(
+#                 filename=minimap["filename"]
+#             ),
+#             png=PNGImage(
+#                 filename=mapname + ".png",
+#                 md5=minimap["md5"] if "md5" in minimap else None,
+#                 url=minimap["url"] if "url" in minimap else None
+#             )
+#         )
 
-maplist.update()
+# maplist.update()
         
 
 maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')

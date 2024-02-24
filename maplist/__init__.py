@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from json import dumps, load
+from pickle import dump as pickle_dump, load as pickle_load
+from json import dumps as json_dumps, load as json_load, dump as json_dump
 from copy import copy
-from utils import jsencoder
+from pathlib import Path
+# from utils import jsencoder
 
 from maplist.map import MapListMap
 
@@ -27,20 +29,22 @@ class Maplist:
     maps: dict[str,'MapListMap']
 
     @staticmethod
-    def from_dict(obj: dict) -> 'Maplist':
+    def from_dict(obj: dict[str,dict[str,'MapListMap']]) -> 'Maplist':
         maps = {}
         for game, _maps in obj.items():
+            _maps: dict[str, 'MapListMap']
             for mapname, map in _maps.items():
                 maps[mapname] = MapListMap.from_dict(map)
         return Maplist(game, maps)
     
     @staticmethod
-    def load(file: str = 'maps.json'):
+    def load(file: Path = 'maps.json'):
         with open(file, 'r', encoding="utf-8") as f:
-            jsonstring = load(f)
+            jsonstring = json_load(f)
             return Maplist.from_dict(jsonstring)
     
-    def save(self, file: str = 'maps.json'):
+    def save(self, file: Path = 'maps.json'):
+        if isinstance(file, str): file = Path(file)
         def filter_object_dict(o):
             # Initialize an empty list to store tuples
             filtered_items = []
@@ -65,11 +69,17 @@ class Maplist:
                     recursive_iterate_dict(value)
                 elif isinstance(value, bytes):
                     raise Exception(f"{str(value)} is bytes!")
-        obj = {self.game: self.maps}
+        if file:
+            with open(file.with_suffix(".pickle"), 'wb') as f: pickle_dump(self.maps, f)
+        obj = {self.game: {}}
+        for mapname, map in self.maps.items():
+            obj[self.game][mapname] = dict((key, value) for key, value in map.__dict__.items() if value)
+        if file:
+            with open(file.with_suffix(".obj.pickle"), 'wb') as f: pickle_dump(obj, f)
         # for game, maps in obj.items():
         #     recursive_iterate_dict(maps)
         #     for mapname, map in maps.items():
-        json = dumps(
+        json = json_dumps(
             obj,
             # cls=jsencoder,
             default = filter_object_dict, # lambda o: dict((key, value) for key, value in o.__dict__.items() if value),

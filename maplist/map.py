@@ -144,9 +144,9 @@ class MapListMap:
         _description = get_safe(obj, "description")
         _source = Source.from_dict(get_safe(obj, "source"))
         # except: _source = Source(SourceID.from_dict(get_safe(obj, "source")))
-        _preview = get_safe(obj, "preview") # Preview.from_dict(get_safe(obj, "preview"))
-        _loadscreen = get_safe(obj, "loadscreen") # Loadscreen.from_dict(get_safe(obj, "loadscreen"))
-        _minimap = get_safe(obj, "minimap") # Minimap.from_dict(get_safe(obj, "minimap"))
+        _preview = Preview.from_dict(get_safe(obj, "preview")) # todo: change!
+        _loadscreen = Loadscreen.from_dict(get_safe(obj, "loadscreen"))
+        _minimap = Minimap.from_dict(get_safe(obj, "minimap"))
         _waypoints = Waypoints.from_dict(get_safe(obj, "waypoints"))
         _alternatives = get_safe(obj, "alternatives")
         return MapListMap(index=_index, mapname=_mapname, title=_title, source=_source, description=_description, preview=_preview, loadscreen=_loadscreen, minimap=_minimap, waypoints=_waypoints, alternatives=_alternatives)

@@ -97,7 +97,7 @@ class CampaignAct:
     @staticmethod
     def from_dict(obj: Any) -> 'CampaignAct':
         if not obj: return None
-        _title = get_safe(obj, "name")
+        _title = get_safe(obj, "title")
         if _title and not isinstance(_title, dict): raise ValueError(f"Invalid type {type(_title)} for title {_title}")
         _description = get_safe(obj, "description")
         if _description and not isinstance(_description, dict): raise ValueError(f"Invalid type {type(_description)} for description {_description}")
