@@ -8,6 +8,10 @@ if TYPE_CHECKING:
     from .Waypoint import Waypoint
     from .WaypointFile import WaypointFile
 
+from logging import getLogger, basicConfig, DEBUG, INFO
+basicConfig(level=INFO)
+logger = getLogger(__name__)
+
 zeroVector = Vector3(0, 0, 0)
 
 def vectorStr(v: Vector3):
@@ -15,13 +19,16 @@ def vectorStr(v: Vector3):
     return f"{v.x} {v.y} {v.z}"
 
 class WaypointType(Enum):
+    CROUCH = "crouch" # bw default
     STAND = "stand"
-    CROUCH = "crouch"
     PRONE = "prone"
     CLIMB = "climb"
     CLAYMORE = "claymore"
     GRENADE = "grenade"
     JAVELIN = "javelin"
+    JUMP = "jump" # todo: check if exists
+    MANTLE = "mantle" # todo: check if exists
+DefaultWaypointType = WaypointType.STAND # my default because duh
 
 @dataclass
 class Waypoint:
@@ -64,12 +71,15 @@ class Waypoint:
     def __str__(self) -> str:
         return f"WP|{self.uuid}|{self.__hash__()}|{self.index()}|{self.position}|{self.connections_str()}|{self.type.name}|{self.angle}|{self.target}"
     
+    def shortstr(self) -> str:
+        return f"[{self.file.path.name}|{self.index()}/{len(self.file.waypoints)}]"
+
     def str(self) -> str:
-        print("self:",self)
-        print("__repr__:",self.__repr__(True))
-        print("to_str:",self.to_str())
-        print("to_row:",self.to_row())
-        print("hashstr:",self.hashstr())
+        logger.info(f"self: {self}")
+        logger.info(f"__repr__: {self.__repr__(True)}")
+        logger.info(f"to_str: {self.to_str()}")
+        logger.info(f"to_row: {self.to_row()}")
+        logger.info(f"hashstr: {self.hashstr()}")
 
     def distance_to_zero(self) -> float: return self.position.distance_to(zeroVector)
     def distance_to_first(self) -> float: return self.distance_to(self.file.waypoints[0])
@@ -90,11 +100,45 @@ class Waypoint:
 
     def to_row(self) -> str:
         return (",".join(self.to_list())).strip()
+    
+    def check(self, fix: bool = False, ask_for_user_input: bool = False) -> int:
+        if fix: raise Exception("Fix not implemented")
+        errors = 0
+        # if self.index() != self._index:
+        #     errors += 1
+        #     logger.info(f"Waypoint index {self.index()} does not match declared index {self._index}")
+        if self.position == zeroVector:
+            errors += 1
+            logger.info(f"Waypoint {self.shortstr()} position {self.position} is zero")
+        if len(self.connections) < 1:
+            errors += 1
+            logger.info(f"Waypoint {self.shortstr()} has no connections")
+        if not isinstance(self.type, WaypointType) or self.type not in WaypointType.__members__.values():
+            errors += 1
+            logger.info(f"Waypoint {self.shortstr()} has potentially non-existant type {self.type}")
+        if self.type is None:
+            errors += 1
+            logger.info(f"Waypoint {self.shortstr()} has no type")
+        return errors
 
     @staticmethod
     def from_row(index:int, row:list[str], file:'WaypointFile'):
         pos = Vector3([float(p) for p in row[0].split(' ')]) if row[0] else None
         angle = Vector3([float(p) for p in row[3].split(' ')]) if row[3] else None
-        connections = [int(c) for c in row[1].split(' ')] if row[1] else []
+        try: connections = [int(c) for c in row[1].split(' ')] if row[1] else []
+        except Exception as ex:
+            msg = f"Invalid waypoint connections: {row[1]} in row {index} of {file.path.name}"
+            logger.error(msg)
+            for i, c in enumerate(row[1].split(' ')):
+                try: connections.append(int(c))
+                except Exception as ex:
+                    msg = f"Invalid waypoint connection #{i}: {c} in row {index} of {file.path.name}"
+                    logger.error(msg)
         target = Vector3([float(p) for p in row[4].split(' ')]) if row[4] else None
-        return Waypoint(index=index, position=pos, connections=connections, type=WaypointType(row[2]), angle=angle, target=target, file=file)
+        wp_type = row[2]
+        try: wp_type = WaypointType(wp_type)
+        except Exception as ex:
+            msg = f"Invalid waypoint type: {wp_type} in row {index} of {file.path.name} [Replacing with default {DefaultWaypointType.name}]"
+            logger.error(msg)
+            wp_type = DefaultWaypointType
+        return Waypoint(index=index, position=pos, connections=connections, type=wp_type, angle=angle, target=target, file=file)
