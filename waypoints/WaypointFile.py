@@ -70,7 +70,6 @@ class WaypointFile:
         errors = self.check_count(fix=fix, ask_for_user_input=ask_for_user_input)
         new_waypoints = []
         for waypoint in self.waypoints:
-            # logger.debug(f"Checking {waypoint.shortstr()} ({waypoint})")
             new_waypoint = copy(waypoint)
             # errors += waypoint.check(fix=fix, ask_for_user_input=ask_for_user_input)
             for i, connection in enumerate(waypoint.connections):
@@ -102,12 +101,9 @@ class WaypointFile:
             elif keep_connections > -1:
                 new_waypoint.connections = waypoint.connections[:keep_connections]
             if new_waypoint: new_waypoints.append(new_waypoint)
-        logger.debug("1")
         self.waypoints = new_waypoints
-        logger.debug("2")
         if ask_for_user_input:
             input(f"{'Fixed'if fix else 'Found'} {errors} errors. Press enter to continue...")
-        logger.debug("3")
         return errors
 
     def merge_from(self, other:'WaypointFile'):
@@ -135,7 +131,6 @@ class WaypointFile:
                     raise Exception(f"[{i}] Invalid row length: {len(parts)}")
                 row = [r.strip() for r in parts]
                 self._rows.append(row)
-                # logger.debug(f"Loaded row {i}: {row}")
                 self.waypoints.append(Waypoint.from_row(i, row, self))
             if (len(headers) > 0 and headers[0].isdigit()):
                 self._count = int(headers[0])
@@ -184,19 +179,14 @@ class WaypointFile:
     def to_waypointrows(self) -> list['WaypointRow']:
         ret = []
         if not isinstance(self.waypoints, list): raise Exception("self.waypoints is not a list")
-        logger.debug(f"to_waypointrows: {len(self.waypoints)}")
         for i, waypoint in enumerate(self.waypoints):
             if not isinstance(waypoint, Waypoint): raise Exception(f"Waypoint {waypoint} is not a Waypoint")
-            logger.debug(f"test wp={waypoint._index}")
             new_connections = []
             if not isinstance(waypoint.connections, list): raise Exception(f"Waypoint {waypoint.shortstr()} connections is not a list")
             for connection in waypoint.connections:
                 if not isinstance(connection, Waypoint): raise Exception(f"Connection {connection} is not a Waypoint")
-                logger.debug(f"test conn={connection._index}")
                 (con_wp_index, con_wp) = self.get_index(connection.hashstr(connections=False))
-                logger.debug(f"found matching connwp3")
                 if con_wp:
-                    logger.debug(f"found conn index={con_wp_index}")
                     new_connections.append(con_wp_index)
                 else:
                     logger.warn(f"Waypoint {waypoint.shortstr()} connection {connection} is not in this file")
@@ -207,25 +197,20 @@ class WaypointFile:
         return [wp.to_str() for wp in self.to_waypointrows()]
 
     def to_rows(self) -> list[str]:
-        logger.debug("to_rows")
-        ret = []
-        for wp in self.to_waypointrows():
-            ret.append(wp.to_row(connections=True))
-        return ret
+        return [wp.to_row(connections=True) for wp in self.to_waypointrows()]
 
     def get_index(self, hash: str) -> tuple[int, 'Waypoint']:
         ret: dict[int, 'Waypoint'] = {}
         for i, waypoint in enumerate(self.waypoints):
             hashstr = waypoint.hashstr(connections=False)
-            # logger.debug(f"Comparing {hashstr} to {hash}")
             if hashstr == hash: ret[i] = waypoint
         _cnt = len(ret)
-        if _cnt < 1 or _cnt > 1:
+        if _cnt < 1:
+            logger.error(f"Waypoint with hash {hash} has no indexes in self.waypoints!")
+            return (None, None)
+        elif _cnt > 1:
             _msg = f"Waypoint with hash {hash} has {_cnt} indexes in self.waypoints!"
-            logger.error(_msg)
-            # raise Exception(_msg)
-            for waypoint in self.waypoints:
-                logger.debug(';'.join([str(waypoint._index),waypoint.to_row(True)]))
+            logger.error(_msg); raise Exception(_msg)
         return next(iter((ret.items())))
 
     def save(self, path:Path=None, sort:SortingMethod=SortingMethod.NONE, tabs:bool=False):
@@ -244,5 +229,5 @@ class WaypointFile:
         if tabs: txt = tabulate(self.to_strlist(), "", "plain").replace("\r","").strip()
         else: txt = "\n".join(self.to_rows())
         with path.open('w', newline='') as csvfile:
-            csvfile.writelines([str(len(waypoints)), txt, ""])
+            csvfile.write('\n'.join([str(len(waypoints)), txt, ""]))
         logger.info(f"Wrote {len(waypoints)} waypoints to {path}")

@@ -101,32 +101,33 @@ class Waypoint:
         return errors
 
     @staticmethod
-    def from_row(index:int, row:list[str], file:'WaypointFile'):
+    def from_row(row_index:int, row:list[str], file:'WaypointFile'):
+        wp_index = row_index - 1
         pos = Vector3([float(p) for p in row[0].split(' ')]) if row[0] else None
         angle = Vector3([float(p) for p in row[3].split(' ')]) if row[3] else None
         try: connections = [int(c) for c in row[1].split(' ')] if row[1] else []
         except Exception as ex:
-            msg = f"Invalid waypoint connections: {row[1]} in row {index} of {file.path.name}"
+            msg = f"Invalid waypoint connections: {row[1]} in row {row_index} (wp: {wp_index}) of {file.path.name}"
             logger.error(msg)
             for i, c in enumerate(row[1].split(' ')):
                 try: connections.append(int(c))
                 except Exception as ex:
-                    msg = f"Invalid waypoint connection #{i}: {c} in row {index} of {file.path.name}"
+                    msg = f"Invalid waypoint connection #{i}: {c} in row {row_index} (wp: {wp_index}) of {file.path.name}"
                     logger.error(msg)
         if len(connections):
             for connection in connections:
-                if connection == index-1:
-                    msg = f"Connection {connection} is connected to itself in row {index} of {file.path.name}"
+                if connection == wp_index:
+                    msg = f"Connection {connection} is connected to itself in row {row_index} (wp: {wp_index}) of {file.path.name}"
                     logger.error(msg)
                     # connections.remove(connection)
         target = Vector3([float(p) for p in row[4].split(' ')]) if row[4] else None
         wp_type = row[2]
         try: wp_type = WaypointType(wp_type)
         except Exception as ex:
-            msg = f"Invalid waypoint type: {wp_type} in row {index} of {file.path.name} [Replacing with default {DefaultWaypointType.name}]"
+            msg = f"Invalid waypoint type: {wp_type} in row {row_index} (wp: {wp_index}) of {file.path.name} [Replacing with default {DefaultWaypointType.name}]"
             logger.error(msg)
             wp_type = DefaultWaypointType
-        return Waypoint(_index=index, position=pos, connections=connections, type=wp_type, angle=angle, target=target, file=file)
+        return Waypoint(_index=wp_index, position=pos, connections=connections, type=wp_type, angle=angle, target=target, file=file)
 
 @dataclass
 class WaypointRow(Waypoint):
@@ -134,7 +135,6 @@ class WaypointRow(Waypoint):
     def __init__(self, waypoint: 'Waypoint', connections: list[int]):
         super().__init__(waypoint._index, waypoint.position, waypoint.connections, waypoint.type, waypoint.angle, waypoint.target, waypoint.file)
         self.connections = connections
-        logger.debug(f"WaypointRow: {self}")
 
     def to_list(self, connections: bool = False):
         return [vectorStr(self.position), self.connections_str() if connections else "" , self.type.value, vectorStr(self.angle), vectorStr(self.target), ""]
