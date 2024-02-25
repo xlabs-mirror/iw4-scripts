@@ -25,14 +25,15 @@ wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
 
 errs = 0
 files = 0
-wps = 0
+total_wps = 0
 for file in wp_dir.glob("*.csv"):
     # if not str(file).endswith("so_chopper_invasion_wp.csv"):
     #     continue
     print(file)
     files += 1
     file = WaypointFile(file, ask_for_user_input=ask_input)
-    wps += len(file.waypoints)
+    _wps = len(file.waypoints)
+    total_wps += _wps
     # for waypoint in file.waypoints:
     #     if waypoint.type == WaypointType.JAVELIN:
         # if waypoint.target is not None and waypoint.target == zeroVector:
@@ -40,11 +41,11 @@ for file in wp_dir.glob("*.csv"):
 
     err = file.check(fix=fix, ask_for_user_input=ask_input)
     errs += err
+    logger.info(f"Checked {file.path} with {_wps} waypoints, found {err} errors")
     if err > 0:
-        logger.debug("err > 0")
-        file.save(file.path.with_suffix(".fixed"), sort=SortingMethod.NONE)
+        file.save(file.path, sort=SortingMethod.NONE) # .with_suffix(".fixed")
 
-print(f"Checked {files} files with {wps} waypoints, {'fixed'if fix else'found'} {errs} errors")
+print(f"Checked {files} files with {total_wps} waypoints, {'fixed'if fix else'found'} {errs} errors")
     
 
 # file = WaypointFile(r"G:\Steam\steamapps\common\Call of Duty Modern Warfare 2\userraw\scriptdata\waypoints\mp_plaza2_wp__.csv", ask_for_user_input=ask_input)
