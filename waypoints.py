@@ -27,7 +27,7 @@ errs = 0
 files = 0
 wps = 0
 for file in wp_dir.glob("*.csv"):
-    if not str(file).endswith("gulag_wp.csv"):
+    if not str(file).endswith("so_chopper_invasion_wp.csv"):
         continue
     print(file)
     files += 1
@@ -42,7 +42,7 @@ for file in wp_dir.glob("*.csv"):
     errs += err
     if err > 0:
         logger.debug("err > 0")
-        file.save(file.path, sort=SortingMethod.NONE)
+        file.save(file.path.with_suffix(".fixed"), sort=SortingMethod.NONE)
 
 print(f"Checked {files} files with {wps} waypoints, {'fixed'if fix else'found'} {errs} errors")
     
