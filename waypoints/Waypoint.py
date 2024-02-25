@@ -105,7 +105,8 @@ class Waypoint:
         wp_index = row_index - 1
         pos = Vector3([float(p) for p in row[0].split(' ')]) if row[0] else None
         angle = Vector3([float(p) for p in row[3].split(' ')]) if row[3] else None
-        try: connections = [int(c) for c in row[1].split(' ')] if row[1] else []
+        connections = []
+        try: connections = [int(c) for c in row[1].split(' ')] # if row[1] else []
         except Exception as ex:
             msg = f"Invalid waypoint connections: {row[1]} in row {row_index} (wp: {wp_index}) of {file.path.name}"
             logger.error(msg)
@@ -114,12 +115,11 @@ class Waypoint:
                 except Exception as ex:
                     msg = f"Invalid waypoint connection #{i}: {c} in row {row_index} (wp: {wp_index}) of {file.path.name}"
                     logger.error(msg)
-        if len(connections):
-            for connection in connections:
-                if connection == wp_index:
-                    msg = f"Connection {connection} is connected to itself in row {row_index} (wp: {wp_index}) of {file.path.name}"
-                    logger.error(msg)
-                    # connections.remove(connection)
+        for connection in connections:
+            if connection == wp_index:
+                msg = f"Connection {connection} is connected to itself in row {row_index} (wp: {wp_index}) of {file.path.name}"
+                logger.error(msg)
+                # connections.remove(connection)
         target = Vector3([float(p) for p in row[4].split(' ')]) if row[4] else None
         wp_type = row[2]
         try: wp_type = WaypointType(wp_type)

@@ -27,8 +27,8 @@ errs = 0
 files = 0
 wps = 0
 for file in wp_dir.glob("*.csv"):
-    if not str(file).endswith("so_chopper_invasion_wp.csv"):
-        continue
+    # if not str(file).endswith("so_chopper_invasion_wp.csv"):
+    #     continue
     print(file)
     files += 1
     file = WaypointFile(file, ask_for_user_input=ask_input)
