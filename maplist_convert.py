@@ -101,7 +101,9 @@ def get_map_subtitle(mapname):
 def get_from_campaign(mapname: str, url: str = "https://minopia.de/iw4/maps/?sources=Singleplayer") -> MapListMap: # https://re.minopia.de/iw4maps
     campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
     if campaign_mission:
-        if maplist.
+        existing = maplist.get_maps_by_name(mapname=mapname)
+        if len(existing):
+            logger.warning(f"Campaign Mission {campaign_mission.shortstr()} already exists in maplist as {existing[0].shortstr()}")
         map = MapListMap.from_mapname(mapname, Source(f"Singleplayer ({campaign_act.title['english']})", url))
         if campaign_mission.title:
             map.title['english'] = campaign_mission.title['english']
@@ -111,11 +113,12 @@ def get_from_campaign(mapname: str, url: str = "https://minopia.de/iw4/maps/?sou
         return map
     return None
 
-map = get_from_campaign("af_chase")
-
 def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sources=Spec%20Ops") -> MapListMap:
     specops_mission, specops_act = specopslist.get_by_mapname(mapname)
     if specops_mission:
+        existing = maplist.get_maps_by_name(mapname=mapname)
+        if len(existing):
+            logger.warning(f"Spec Ops Mission {specops_mission.shortstr()} already exists in maplist as {existing[0].shortstr()}")
         map = MapListMap.from_mapname(mapname, Source(f"Spec Ops ({specops_act.title['english']})", url))
         if specops_mission.title:
             map.title['english'] = specops_mission.title['english']
@@ -124,11 +127,6 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
         if specops_mission.preview: map.preview = specops_mission.preview
         return map
     return None
-
-
-map2 = get_from_specops("so_chopper_invasion")
-
-exit(0)
 
 # i = 0
 # for actname, act in campaignlist.Acts.items():
@@ -253,14 +251,10 @@ exit(0)
 #         )
 
 for txtmap in txtlist:
+    
     if txtmap not in maplist.maps:
         maplist.maps[txtmap] = MapListMap.from_mapname(txtmap)
         maplist.maps[txtmap].source = Source("Unknown", "https://tinyurl.com/iw4xmaps")
-        for campaign_act in campaignlist.Acts:
-            for campaign_mission in campaign_act.missions:
-                if campaign_mission.mapname == txtmap:
-                    maplist.maps[txtmap].source = Source("Singleplayer", "https://tinyurl.com/iw4xmaps")
-                    break
 
 # maplist.update()
         

@@ -31,14 +31,14 @@ class Location:
 @dataclass
 class Mission:
     index: Optional[int]
-    name: Optional[str]
+    title: Optional[dict[str,str]]
     mapname: Optional[str]
-    description: Optional[str]
+    description: Optional[dict[str,str]]
     preview: Optional[Preview]
 
-    def __init__(self, index: int, name: str, mapname: str, description: str, preview: Preview) -> None:
+    def __init__(self, index: int, title: dict[str,str], mapname: str, description: dict[str,str], preview: Preview) -> None:
         self.index = index
-        self.name = name
+        self.title = title
         self.mapname = mapname
         self.description = description
         self.preview = preview
@@ -47,11 +47,16 @@ class Mission:
     def from_dict(obj: Any) -> 'Mission':
         if not obj: return None
         _index = get_safe(obj, "index")
-        _name = get_safe(obj, "name")
+        _title = get_safe(obj, "title")
         _mapname = get_safe(obj, "mapname")
         _description = get_safe(obj, "description")
         _preview = Preview.from_dict(get_safe(obj, "preview"))
-        return Mission(_index, _name, _mapname, _description, _preview)
+        return Mission(_index, _title, _mapname, _description, _preview)
+    
+    def shortstr(self, key: str = "english") -> str:
+        return f"{self.title[key] if key in self.title else self.title} ({self.mapname})"
+    def fullstr(self) -> str:
+        return f"CampaignMission({','.join([f'{key}={value}' for key, value in self.__dict__.items() if value])})"
 
 @dataclass
 class CampaignMission(Mission):

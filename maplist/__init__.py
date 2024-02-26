@@ -103,6 +103,12 @@ class Maplist:
             maps[map.source][mapname] = map
         return maps
     
+    def get_maps_by_name(self, mapname: str) -> list['MapListMap']:
+        return [map for map in self.maps.values() if map.mapname == mapname]
+    
+    def get_maps_by_title(self, title: str) -> list['MapListMap']:
+        return [map for map in self.maps.values() if map.title == title]
+    
     def get_mapnames(self):
         return list(self.maps.keys())
     

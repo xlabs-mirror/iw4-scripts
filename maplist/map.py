@@ -182,3 +182,8 @@ class MapListMap:
                 if mission.mapname == self.mapname:
                     return mission
         return None
+    
+    def shortstr(self, key: str = "english") -> str:
+        return f"{self.title[key] if key in self.title else self.title} ({self.mapname})"
+    def fullstr(self) -> str:
+        return f"MapListMap({','.join([f'{key}={value}' for key, value in self.__dict__.items() if value])})"
