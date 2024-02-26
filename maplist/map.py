@@ -141,7 +141,7 @@ class MapListMap:
     
     def find_possible_alternatives(self, maplist: 'Maplist', ignore_splits: list[str] = None) -> dict[str, str]:#
         ignore_splits = ignore_splits or [
-            'night','snow','tropical','aim','day','ava','long','escape','osg','mw3','killspree','defuse','defense','sabotage','escape','assault','takeover','juggernauts'
+            'night','snow','tropical','aim','day','ava','long','escape','osg','mw3','killspree','defuse','defense','sabotage','escape','assault','takeover','juggernauts','mw2'
         ]
         ret = {}
         # mapnames = maplist.get_mapnames()
@@ -182,13 +182,17 @@ class MapListMap:
             if not input or not output: raise Exception("No input or output for copy_wp_file")
             if not input.exists(): raise Exception(f"Input file {input} does not exist")
             for file in output:
-                if file != input and file.exists():
+                if file == input or file.exists():
                     logger.warning(f"File {file} already exists, skipping")
                     continue
                 copy(input, file)
 
         if not self.waypoints:
             logger.warning(f"No waypoints for {self.mapname}")
+            return []
+        
+        if not self.alternatives:
+            logger.warning(f"No alternatives for {self.mapname}")
             return []
         
         alt_wp_files = get_wp_files(self.alternatives.keys())

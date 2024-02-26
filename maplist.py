@@ -38,6 +38,7 @@ def load_maps(file, as_json = False):
 # endregion common methods
 #region loading
 dir = Path("P:\Python\iw4\iw4-resources")
+wp_dir = Path(dir / "waypoints")
 
 # maplist_file = dir / "maps.json"
 # exit(0)
@@ -148,11 +149,6 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
         if specops_mission.preview: map.preview = specops_mission.preview
         return map
     return None
-
-
-wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
-
-
         
 
 
@@ -301,14 +297,17 @@ wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
 # with open(dir / 'alternatives.json', 'w') as f:
 #     f.write(json)
 
-# for mapname, map in maplist.maps.items():
-#     alts = get_alt_dicts(mapname)
-#     if alts:
-#         combined = {}
-#         for alt in alts:
-#             combined.update(alt)
-#         del combined[mapname]
-#         map.alternatives = combined
+for mapname, map in maplist.maps.items():
+    alts = get_alt_dicts(mapname)
+    if alts:
+        combined = {}
+        for alt in alts:
+            combined.update(alt)
+        del combined[mapname]
+        map.alternatives = combined
+
+
+# maplist.copy_waypoints(wp_dir)
 
 # maplist.update()
         
