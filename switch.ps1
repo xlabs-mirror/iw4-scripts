@@ -6,20 +6,21 @@ param(
     [bool]$ignoreRunning = $false,
     [bool]$startGame = $false,
     [string]$gameExe = "iw4x.exe",
-    [string]$basePath = (Get-Location).Path
+    [string]$basePath = (Get-Location).Path,
+    [switch]$help
 )
 
 $versions = @{
     "r4500" = @{
         "replacements" = @{
             "iw4x.dll" = "iw4x_r4500.dll"
-            "iw4x" = "iw4x_r4500" # folder
+            # "iw4x" = "iw4x_r4500" # folder
         }
     }
     "r4499" = @{
         "replacements" = @{
             "iw4x.dll" = "iw4x_r4499.dll"
-            "iw4x" = "iw4x_r4499" # folder
+            # "iw4x" = "iw4x_r4499" # folder
         }
     }
     "r4432" = @{
@@ -38,10 +39,28 @@ $versions = @{
 
 $gameProcessName = $gameExe -split "\." | Select-Object -First 1
 $success = $false
+$scriptArgs = $args
 
 function List-Versions {
     Write-Host "Available versions:"
     $versions.Keys | ForEach-Object { Write-Host " - $_" }
+}
+
+function Show-Help {
+    $params = $scriptArgs
+    $paramlist = $()
+    foreach ($param in $params.Keys) {
+        $paramType = $params[$param].ParameterType.Name
+        $paramstr = "[-$param] <$paramType>"
+        Write-Host "Param: $param, Type: $paramType"
+        $paramlist += " $paramstr"
+    }
+    $paramstr = $paramlist -join " "
+    Write-Host "Usage: switch.ps1 $paramstr"
+    foreach ($param in $params.Keys) {
+        $paramType = $params[$param].ParameterType.Name
+        Write-Host "  -$param <$paramType>    $($params[$param].Attributes[0].NamedArguments.Value[0].TypedValue.Value)"
+    }
 }
 
 function Get-Current-Version {
@@ -127,7 +146,10 @@ function Switch-GameVersion {
 }
 
 Write-Host "Current version: $currentVersion"
-if ($version -ne "") {
+if ($help) {
+    Show-Help
+    return
+} elseif ($version -ne "") {
     # If version is provided as an argument, use it
     $success = Switch-GameVersion -version $version
 } elseif ($args.Count -gt  0) {
