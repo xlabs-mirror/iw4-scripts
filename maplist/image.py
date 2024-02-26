@@ -95,14 +95,17 @@ class Preview():
         mapname = mapname or (map.mapname if map else None)
         if not mapname: raise Exception(f"No mapname for {imagetype}")
         noprefix = mapname.removeprefix('mp_')
-        urls = [
+        iwi_urls = [
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.iwi",
+        ]
+        if self.iwi: self.iwi.update(imagetype=imagetype, urls=iwi_urls, base64=base64, map=map)
+        png_urls = [
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.png",
             f"https://callofdutymaps.com/wp-content/uploads/{noprefix}1-1500x500.jpg",
             f"http://www.themodernwarfare2.com/images/mw2/maps/{noprefix}-prev.jpg",
             f"https://image.gametracker.com/images/maps/160x120/cod4/{mapname}.jpg"
         ]
-        if self.iwi: self.iwi.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
-        if self.png: self.png.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
+        if self.png: self.png.update(imagetype=imagetype, urls=png_urls, base64=base64, map=map)
         return self
 prefix_loadscreen = "loadscreen_map_"
 @dataclass
@@ -132,11 +135,14 @@ class Loadscreen():
         mapname = mapname or (map.mapname if map else None)
         if not mapname: raise Exception(f"No mapname for {imagetype}")
         # noprefix = mapname.removeprefix('mp_')
-        urls = [
+        iwi_urls = [
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.iwi",
+        ]
+        if self.iwi: self.iwi.update(imagetype=imagetype, urls=iwi_urls, base64=base64, map=map)
+        png_urls = [
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.png",
         ]
-        if self.iwi: self.iwi.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
-        if self.png: self.png.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
+        if self.png: self.png.update(imagetype=imagetype, urls=png_urls, base64=base64, map=map)
         return self
 prefix_minimap = "compass_"
 @dataclass
@@ -166,11 +172,14 @@ class Minimap():
         mapname = mapname or (map.mapname if map else None)
         if not mapname: raise Exception(f"No mapname for {imagetype}")
         noprefix = mapname.removeprefix('mp_')
-        urls = [
+        iwi_urls = [
+            f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.iwi"
+        ]
+        if self.iwi: self.iwi.update(imagetype=imagetype, urls=iwi_urls, base64=base64, map=map)
+        png_urls = [
             f"https://raw.githubusercontent.com/xlabs-mirror/iw4-resources/main/{imagetype}/{mapname}.png",
             f"https://callofdutymaps.com/wp-content/uploads/{noprefix}compass.png",
             f"http://www.themodernwarfare2.com/images/mw2/maps/{noprefix}-layout.jpg"
         ]
-        if self.iwi: self.iwi.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
-        if self.png: self.png.update(imagetype=imagetype, urls=urls, base64=base64, map=map)
+        if self.png: self.png.update(imagetype=imagetype, urls=png_urls, base64=base64, map=map)
         return self

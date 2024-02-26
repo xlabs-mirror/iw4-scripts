@@ -1,11 +1,12 @@
-from copy import copy
-from pathlib import Path
 from sys import path as syspath
 from os import getcwd
 syspath.append(getcwd())
 
+from copy import copy
+from pathlib import Path
 from pprint import pprint
 from json import dumps as json_dumps, load as json_load
+from shutil import copy as file_copy
 from maplist import Maplist
 from maplist.map import MapListMap, Preview, Loadscreen, Minimap, Waypoints
 from maplist.campaign import CampaignList, CampaignMission, Location, Mission, CampaignAct
@@ -297,19 +298,35 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
 # with open(dir / 'alternatives.json', 'w') as f:
 #     f.write(json)
 
-for mapname, map in maplist.maps.items():
-    alts = get_alt_dicts(mapname)
-    if alts:
-        combined = {}
-        for alt in alts:
-            combined.update(alt)
-        del combined[mapname]
-        map.alternatives = combined
+# for mapname, map in maplist.maps.items():
+#     alts = get_alt_dicts(mapname)
+#     if alts:
+#         combined = {}
+#         for alt in alts:
+#             combined.update(alt)
+#         del combined[mapname]
+#         map.alternatives = combined
 
+# altlists = [list(x.keys()) for x in alt_dicts_lists]
+# for altlist in altlists:
+#     logger.info(f"Checking altlist {altlist[0]}")
+#     wp_paths = [wp_dir / f"{alt}_wp.csv" for alt in altlist]
+#     main_wp_path = None
+#     for wp_path in wp_paths:
+#         if wp_path.exists():
+#             if not main_wp_path:
+#                 main_wp_path = wp_path
+#                 break
+#     for wp_path in wp_paths:
+#         if wp_path.exists():
+#             logger.info(f"\tExisting waypoints file {wp_path}")
+#         else:
+#             logger.warning(f"\tMissing waypoints file {wp_path}")
+#             file_copy(main_wp_path, wp_path)
 
 # maplist.copy_waypoints(wp_dir)
 
-# maplist.update()
+maplist.update()
         
 if maplist != original_maplist or True:
     maplist.save(dir / "maps.json")
