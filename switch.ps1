@@ -1,5 +1,6 @@
 param(
     [string]$version = "",
+    [bool]$switch = $true,
     [bool]$force = $false,
     [bool]$killGame = $false,
     [bool]$ignoreRunning = $false,
@@ -39,11 +40,10 @@ function Get-Current-Version {
         $targetItem = Get-Item -Path $targetPath -ErrorAction SilentlyContinue
         if ($targetItem) {
             $sourcePath = $targetItem.Target
-            $sourceVersion = $sourcePath -split "_", 2 | Select-Object -Last 1
+            $sourceVersion = $sourcePath -split "_" | Select-Object -Last 1
             Write-Debug "Found symlink for $firstItem ($targetItem): $sourceVersion ($sourcePath)"
-            if ($sourceVersion -eq $version) {
-                $currentVersion = $version
-                break
+            if (-not $sourceVersion -eq "") {
+                $currentVersion = $sourceVersion
             }
             break
         }
@@ -83,6 +83,10 @@ function Switch-GameVersion {
     if ($currentVersion -eq $version -and -not $force) {
         Write-Host "Already on version $version."
         return $true
+    }
+    if (-not $switch) {
+        Write-Warning "Switching is disabled by ""-switch false""."
+        return $false
     }
     foreach ($target in $versions[$version]["replacements"].Keys) {
         $targetPath = Join-Path $basePath $target
