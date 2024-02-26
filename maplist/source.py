@@ -47,7 +47,7 @@ class Mirror:
     def from_dict(obj: Any) -> 'Mirror':
         if obj is None: return None
         _name = get_safe(obj, "name")
-        _url = urlparse(get_safe(obj, "url"))
+        _url = get_safe(obj, "url") # urlparse(
         _icon = get_safe(obj, "icon")
         return Mirror(_name, _url, _icon)
 
@@ -65,14 +65,14 @@ class Source:
         _name = get_safe(obj, "name")
         _url = get_safe(obj, "url") # urlparse(
         _md5 = get_safe(obj, "md5")
-        _mirrors = Mirror.from_dict(get_safe(obj, "mirrors")) or None
+        _mirrors = [Mirror.from_dict(m) for m in get_safe(obj, "mirrors") or []]
         return Source(_name, _url, _md5, _mirrors)
 
     def __eq__(self, other):
         return self.url == other.url and self.md5 == other.md5 and self.name == other.name and self.mirrors == other.mirrors
     
     def __hash__(self):
-        return hash((self.name, self.url, self.md5, self.mirrors))
+        return hash((self.name, self.url, self.md5, str(self.mirrors)))
     
     def __str__(self):
         return f"{self.name} ({self.url}) [{len(self.mirrors) if self.mirrors else 0} mirrors]"

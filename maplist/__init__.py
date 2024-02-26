@@ -112,6 +112,18 @@ class Maplist:
     def get_mapnames(self):
         return list(self.maps.keys())
     
+    def find_possible_alternatives(self, ignore_splits: list[str] = None) -> list[dict[str,str]]:
+        alts: list[dict[str,str]] = []
+        for mapname, map in self.maps.items():
+            _alts = map.find_possible_alternatives(self, ignore_splits=ignore_splits)
+            if _alts:
+                _alts[mapname] = map.shortstr()
+                alts.append(_alts)
+        # sort all dicts by keys
+        for alt in alts: alt = {k: alt[k] for k in sorted(alt)}
+        alts = list({json_dumps(alt, sort_keys=True): alt for alt in alts}.values())
+        return alts
+    
     def update(self) -> None:
         for map in self.maps.values():
             map.update()

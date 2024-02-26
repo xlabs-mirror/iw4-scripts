@@ -6,20 +6,27 @@ syspath.append(getcwd())
 
 from pprint import pprint
 from json import dumps as json_dumps, load as json_load
-from logging import getLogger, basicConfig, DEBUG
 from maplist import Maplist
 from maplist.map import MapListMap, Preview, Loadscreen, Minimap, Waypoints
 from maplist.campaign import CampaignList, CampaignMission, Location, Mission, CampaignAct
-from maplist.source import Source, SourceID
+from maplist.source import Mirror, Source, SourceID
 from maplist.specops import SpecOpsList, SpecOpsMission, SpecOpsAct
 from maplist.image import IWImage, PNGImage
+# region logging
+from logging import getLogger, basicConfig, DEBUG
+logger = getLogger(__name__)
+basicConfig(level=DEBUG)
+# endregion logging
+# region common methods
+def set_default(obj):
+    if isinstance(obj, set) or isinstance(obj, frozenset):
+        return list(obj)
+    return str(obj)
 
 def load_maps(file, as_json = False):
     with open(file, 'r') as f:
         return f.read().splitlines() if not as_json else json_load(f)
-
-logger = getLogger(__name__)
-basicConfig(level=DEBUG)
+# endregion common methods
 #region loading
 dir = Path("P:\Python\iw4\iw4-resources")
 
@@ -27,6 +34,7 @@ dir = Path("P:\Python\iw4\iw4-resources")
 # exit(0)
 
 maplist = Maplist.load(dir / "maps.json")
+original_maplist = copy(maplist)
 logger.info(f"Loaded {maplist}")
 
 campaignlist = CampaignList.load(dir / "campaign.json")
@@ -43,8 +51,8 @@ logger.info(f"Loaded {specopslist}")
     
 txtlist = load_maps(dir / "maps.txt")
 logger.info(f"Loaded {len(txtlist)} txt maps")
-alternatives_dict: dict[str, list[str]] = load_maps(dir / "alternatives.json", True)
-logger.info(f"Loaded {len(alternatives_dict)} alternatives")
+alt_dicts_lists: list[dict[str,str]] = load_maps(dir / "alternatives.json", True)
+logger.info(f"Loaded {len(alt_dicts_lists)} alternatives chunks")
 #endregion loading
 #region check_missing
 for act in campaignlist.Acts:
@@ -63,23 +71,27 @@ for txtmap in txtlist:
         print(f"Missing txtmap {txtmap}")
 #endregion check_missing
 # region map_related_methods
+def get_alt_dicts(mapname: str) -> list[dict[str,str]]:
+    alt_dicts = []
+    for alt_list in alt_dicts_lists:
+        if mapname in alt_list:
+            alt_dicts.append(alt_list)
+    return alt_dicts
 def set_maps_source(file, source, stringmaps = None):
     map_array = load_maps(file)
     for mapname in map_array:
         if mapname not in maplist.maps:
             maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
         maplist.maps[mapname].source = source
-
 def add_maps(file, source, stringmaps = None):
     map_array = load_maps(file)
     for mapname in map_array:
         maplist.maps[mapname] = MapListMap.from_mapname(mapname, source, stringmaps)
-
-def get_map_subtitle(mapname):            
-    campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
-    if campaign_mission: return f"Campaign {campaign_act.title['english']}: {campaign_mission.title['english']} (#{campaign_mission.index})"
+def get_map_subtitle(mapname):
     specops_mission, specops_act = specopslist.get_by_mapname(mapname)
     if specops_mission: return f"Spec Ops {specops_act.title['english']}: {specops_mission.title['english']} (#{specops_mission.index})"
+    campaign_mission, campaign_act = campaignlist.get_by_mapname(mapname)
+    if campaign_mission: return f"Campaign {campaign_act.title['english']}: {campaign_mission.title['english']} (#{campaign_mission.index})"
     mainmap = maplist.maps[mapname]
     return (f"{mainmap.source.name}: " if mainmap.source.name else "") + f"{mainmap.title['english']}" + (f" (#{mainmap.index})" if mainmap.index else "")
 #endregion map_related_methods
@@ -128,6 +140,15 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
         return map
     return None
 
+
+# wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
+# for file in wp_dir.glob("*.csv"):
+#     name = file.stem.replace("_wp", "")
+#     if not name.isidentifier():
+#         print(f"Invalid mapname {name}")
+#         continue
+#     newmaps.append(name)
+
 # i = 0
 # for actname, act in campaignlist.Acts.items():
 #     source = Source(f"Singleplayer ({actname})", "https://steamcommunity.com/groups/IW4X/discussions/0/1470841715980056455")
@@ -166,18 +187,18 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
 #     map.name = None
 
 # for mapname, map in maplist.maps.items():
-#     for act in campaignlist.Acts:
-#         for mission in act.missions:
-#             if mission.mapname == mapname:
-#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
-#                 # map.title['english'] = f"{mission.title['english']} (#{mission.index})"
-#                 map.index = mission.index
-#                 break
 #     for act in specopslist.Acts:
 #         for mission in act.missions:
 #             if mission.mapname == mapname:
-#                 logger.debug(f"Found mission {mission.title} for map {mapname}")
-#                 map.index = mission.index
+#                 logger.debug(f"Found spec ops mission {mission.title} for map {mapname}")
+#                 maplist.maps[mapname] = get_from_specops(mapname)
+#                 break
+#     for act in campaignlist.Acts:
+#         for mission in act.missions:
+#             if mission.mapname == mapname:
+#                 logger.debug(f"Found campaign mission {mission.title} for map {mapname}")
+#                 maplist.maps[mapname] = get_from_campaign(mapname)
+#                 break
 
 
 # for mapname, map in maplist.maps.items():
@@ -250,13 +271,39 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
 #             )
 #         )
 
-for txtmap in txtlist:
-    
-    if txtmap not in maplist.maps:
-        maplist.maps[txtmap] = MapListMap.from_mapname(txtmap)
-        maplist.maps[txtmap].source = Source("Unknown", "https://tinyurl.com/iw4xmaps")
+# newmaps = []
+# for txtmap in newmaps:
+#     if txtmap not in maplist.maps.keys():
+#         newmap = get_from_campaign(txtmap)
+#         if not newmap: newmap = get_from_specops(txtmap)
+#         if not newmap: newmap = MapListMap.from_mapname(txtmap)
+#         maplist.maps[txtmap] = newmap
+
+# src = Source("Custom Maps", "https://minopia.de/iw4/maps/?sources=Custom%20Maps", None, [
+#     Mirror("CoD-Store", "https://www.cod-store.net/dlc/iw4x/custom-maps", "https://lh5.googleusercontent.com/qWYhXMp7q9WCo6mzVRO1bBhYwU7XIrfwPzM2YL_WYAqGblpuENNypyqt4nAWLXe2Suv5YoPWGMTXgAAvvOzuJFWQcRj3anLdMECJTla8TVsxhw"),
+#     Mirror("DLC-Store", "http://dlc-store.rf.gd/IW4x_custom_maps.html", "http://dlc-store.rf.gd/media/img/icons/favicon.svg")
+# ])
+# for mapname, map in maplist.maps.items():
+#     if map.description['english'].endswith(' is a map for Call of Duty: Modern Warfare 2.'):
+#         if not map.source: map.source = src
+#         map.source.name = src.name
+#         map.source.url = src.url
+
+# alts = maplist.find_possible_alternatives()
+# json = json_dumps(alts, indent=4, default=set_default)
+# with open(dir / 'alternatives.json', 'w') as f:
+#     f.write(json)
+
+# for mapname, map in maplist.maps.items():
+#     alts = get_alt_dicts(mapname)
+#     if alts:
+#         combined = {}
+#         for alt in alts:
+#             combined.update(alt)
+#         del combined[mapname]
+#         map.alternatives = combined
 
 # maplist.update()
         
-
-maplist.save('P:\Python\iw4\iw4-resources\maps_out.json')
+if maplist != original_maplist or True:
+    maplist.save(dir / "maps.json")

@@ -1,6 +1,7 @@
 from pathlib import Path
 from sys import path as syspath
 from os import getcwd
+
 syspath.append(getcwd())
 
 from base64 import urlsafe_b64encode
@@ -17,6 +18,8 @@ from maplist.specops import SpecOpsList
 from maplist.file import FileBase
 from utils import get_safe, parse_int
 from pprint import pformat
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from maplist import Maplist
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -90,9 +93,9 @@ class Waypoints(FileBase):
         return filename.removesuffix('_wp.csv')
 
     @staticmethod
-    def from_mapname(mapname: str) -> 'Waypoints':
+    def from_mapname(mapname: str, update: bool = True) -> 'Waypoints':
         ret = Waypoints(Waypoints.get_filename(mapname))
-        ret.update()
+        if update: ret.update()
         return ret
 
     @staticmethod
@@ -132,9 +135,35 @@ class MapListMap:
             preview=Preview.from_mapname(mapname),
             loadscreen=Loadscreen.from_mapname(mapname),
             minimap=Minimap.from_mapname(mapname),
-            waypoints=Waypoints.from_mapname(mapname)
+            waypoints=Waypoints.from_mapname(mapname, update=False),
         ).update_alternatives(alternatives)
     
+    def find_possible_alternatives(self, maplist: 'Maplist', ignore_splits: list[str] = None) -> dict[str, str]:#
+        ignore_splits = ignore_splits or [
+            'night','snow','tropical','aim','day','ava','long','escape','osg','mw3','killspree','defuse','defense','sabotage','escape','assault','takeover','juggernauts'
+        ]
+        ret = {}
+        # mapnames = maplist.get_mapnames()
+
+        def check_split(a: str, b: str) -> tuple[bool, str]:
+            _a = a.lower().replace("mp_", "").split('_')
+            _b = b.lower().replace("mp_", "").split('_')
+            for split in _a:
+                if len(split) < 3 or split in ignore_splits: continue
+                for _split in _b:
+                    if len(_split) < 3 or split in ignore_splits: continue
+                    if split == _split: return True , split
+
+        for mapname, map in maplist.maps.items():
+            if map.mapname == self.mapname: continue
+            is_split, msg = check_split(self.mapname, map.mapname) or (False, "")
+            same_title = map.title == self.title
+            if same_title or is_split:
+                ret[mapname] = map.shortstr() # + f" [{msg}]" if is_split else "same title"
+                    
+        logger.info(f"Found {len(ret)} possible alternatives for {self.mapname}: {ret.keys()}")
+        return ret
+
     def update_alternatives(self, replacing: dict[str, str]) -> 'MapListMap':
         if not replacing: return self
         if not self.alternatives: self.alternatives = {}
