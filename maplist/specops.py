@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from json import dumps, load
 from utils import get_safe
 from maplist.campaign import CampaignAct, Mission
-try: from maplist import Maplist
-except: pass
-try: from maplist.map import MapListMap
-except: pass
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maplist import Maplist
+    from maplist.map import MapListMap
 
 @dataclass
 class Preview:

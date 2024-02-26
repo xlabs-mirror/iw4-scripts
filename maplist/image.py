@@ -6,8 +6,8 @@ from hashlib import md5
 from pathlib import Path
 from utils import get_safe, get_fallback
 from maplist.file import FileBase
-try: from maplist.map import MapListMap
-except: pass
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from maplist.map import MapListMap
 
 from logging import getLogger
 logger = getLogger(__name__)

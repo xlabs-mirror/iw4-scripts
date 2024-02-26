@@ -41,10 +41,10 @@ class Title:
 
 class Description:
     @staticmethod
-    def from_name(title: str, strmap:StringMaps = None, source = None) -> dict[str, str]:
+    def from_name(title: str, strmap:StringMaps = None, source: 'Source' = None) -> dict[str, str]:
         english = f"{title} is a map for Call of Duty: Modern Warfare 2."
         if source:
-            if source == "Custom Maps": english = f"{title} is a custom map."
+            if source.name == "Custom Maps": english = f"{title} is a custom map."
             else: english = f"{title} is a map from {source}."
         ret = {
             "_key": f"MPUI_DESC_MAP_{title.upper().replace(' ', '_')}",
@@ -121,7 +121,7 @@ class MapListMap:
     alternatives: Optional[dict[str,str]] = None
 
     @staticmethod
-    def from_mapname(mapname: str, source: Source = None, strmap:StringMaps = None) -> 'MapListMap':
+    def from_mapname(mapname: str, source: Source = None, strmap: StringMaps = None, alternatives: dict[str, str] = None) -> 'MapListMap':
         title = Title.from_mapname(mapname, strmap)
         return MapListMap(
             index=None,
@@ -133,7 +133,14 @@ class MapListMap:
             loadscreen=Loadscreen.from_mapname(mapname),
             minimap=Minimap.from_mapname(mapname),
             waypoints=Waypoints.from_mapname(mapname)
-        )
+        ).update_alternatives(alternatives)
+    
+    def update_alternatives(self, replacing: dict[str, str]) -> 'MapListMap':
+        if not replacing: return self
+        if not self.alternatives: self.alternatives = {}
+        if self.mapname in replacing: replacing.pop(self.mapname)
+        self.alternatives.update(replacing)
+        return self
 
     @staticmethod
     def from_dict(obj: Any) -> 'MapListMap':
