@@ -13,9 +13,18 @@ from maplist.source import Mirror, Source, SourceID
 from maplist.specops import SpecOpsList, SpecOpsMission, SpecOpsAct
 from maplist.image import IWImage, PNGImage
 # region logging
-from logging import getLogger, basicConfig, DEBUG
-logger = getLogger(__name__)
-basicConfig(level=DEBUG)
+from logging import getLogger, StreamHandler, FileHandler, Formatter, DEBUG, INFO
+logger = getLogger()
+logger.setLevel(DEBUG)
+formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch = StreamHandler()
+ch.setLevel(INFO)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+fh = FileHandler('maplist.log')
+fh.setLevel(DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 # endregion logging
 # region common methods
 def set_default(obj):
@@ -141,13 +150,11 @@ def get_from_specops(mapname: str, url: str = "https://minopia.de/iw4/maps/?sour
     return None
 
 
-# wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
-# for file in wp_dir.glob("*.csv"):
-#     name = file.stem.replace("_wp", "")
-#     if not name.isidentifier():
-#         print(f"Invalid mapname {name}")
-#         continue
-#     newmaps.append(name)
+wp_dir = Path(r"P:\Python\iw4\iw4-resources\waypoints")
+
+
+        
+
 
 # i = 0
 # for actname, act in campaignlist.Acts.items():

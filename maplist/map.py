@@ -18,6 +18,7 @@ from maplist.specops import SpecOpsList
 from maplist.file import FileBase
 from utils import get_safe, parse_int
 from pprint import pformat
+from shutil import copy
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from maplist import Maplist
 
@@ -169,6 +170,42 @@ class MapListMap:
         if not self.alternatives: self.alternatives = {}
         if self.mapname in replacing: replacing.pop(self.mapname)
         self.alternatives.update(replacing)
+        return self
+    
+    def copy_waypoints(self, wp_dir: Path) -> list['Path']:
+        def get_wp_filename(mapname: str) -> str: return f"{mapname}_wp.csv"
+        def get_wp_path(mapname: str) -> Path: return wp_dir / get_wp_filename(mapname)
+        def get_wp_files(wp_dir: Path) -> list[Path]: return [file for file in wp_dir.glob("*.csv") if file.name.endswith('_wp.csv')]
+        def get_wp_mapnames(wp_dir: Path) -> list[str]: return [file.name.removesuffix('_wp.csv') for file in get_wp_files(wp_dir)]
+        def get_wp_files(mapnames: list[str]): return [get_wp_path(mapname) for mapname in mapnames if get_wp_path(mapname).exists()]
+        def copy_wp_file(input: Path, output: list[Path]) -> list[Path]:
+            if not input or not output: raise Exception("No input or output for copy_wp_file")
+            if not input.exists(): raise Exception(f"Input file {input} does not exist")
+            for file in output:
+                if file != input and file.exists():
+                    logger.warning(f"File {file} already exists, skipping")
+                    continue
+                copy(input, file)
+
+        if not self.waypoints:
+            logger.warning(f"No waypoints for {self.mapname}")
+            return []
+        
+        alt_wp_files = get_wp_files(self.alternatives.keys())
+        main_wp_path = get_wp_path(self.mapname)
+        if not main_wp_path.exists():
+            logger.warning(f"No waypoints file for {self.mapname}")
+            for file in alt_wp_files:
+                if file.exists():
+                    logger.warning(f"Alternative waypoint {file} exists, using that as main waypoint file for {self.mapname}")
+                    main_wp_path = file
+                    break
+
+        if not alt_wp_files:
+            logger.warning(f"No waypoint files for {self.shortstr()} alternatives in {wp_dir}")
+            return []
+        
+        copy_wp_file(main_wp_path, alt_wp_files)
         return self
 
     @staticmethod

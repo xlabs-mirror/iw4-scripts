@@ -124,6 +124,11 @@ class Maplist:
         alts = list({json_dumps(alt, sort_keys=True): alt for alt in alts}.values())
         return alts
     
+    def copy_waypoints(self, wp_dir: Path) -> 'Maplist':
+        for map in self.maps.values():
+            map.copy_waypoints(wp_dir)
+        return self
+    
     def update(self) -> None:
         for map in self.maps.values():
             map.update()
