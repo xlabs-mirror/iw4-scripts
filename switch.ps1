@@ -22,6 +22,12 @@ $versions = @{
             "iw4x" = "iw4x_r4499" # folder
         }
     }
+    "r4432" = @{
+        "replacements" = @{
+            "iw4x.dll" = "iw4x_r4432.dll"
+            # "iw4x" = "iw4x_r4432" # folder
+        }
+    }
     "072" = @{
         "replacements" = @{
             "iw4x.dll" = "iw4x_072.dll"
