@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$version = "",
     [bool]$switch = $true,
     [switch]$force = $false,
@@ -8,7 +8,7 @@ param(
     [string]$gameExe = "iw4x.exe",
     [string]$gameArgs = "-disable-notifies -unprotect-dvars -multiplayer -scriptablehttp -console -nointro +set logfile 0",
     [string]$basePath = (Get-Location).Path,
-    [switch]$debug = $false,
+    [switch]$debug = $true,
     [switch]$help
 )
 
@@ -37,54 +37,29 @@ function Log {
     }
 }
 
-# stdout log:
-# Version: PS G:\Steam\steamapps\common\Call of Duty Modern Warfare 2> .\switch.ps1
-# [02/27/2024 16:01:36] Read 1 versions from G:\Steam\steamapps\common\Call of Duty Modern Warfare 2\versions.json
-# @{r4500=; r4499=; r4432=; 072=}
-# WARNING: [02/27/2024 16:01:36] Warning: Detected game version: Unknown
-# [02/27/2024 16:01:36] Available versions:
-# [02/27/2024 16:01:36]  -
-
 function Convert-JsonToPowershellArray {
     param(
         [Parameter(Mandatory=$true)]
         [string]$JsonFilePath
     )
-
-    # Read the JSON file content
     $jsonContent = Get-Content -Path $JsonFilePath -Raw
-
-    # Convert the JSON content to a PowerShell object
     $jsonObject = $jsonContent | ConvertFrom-Json
-
-    # Initialize an empty hashtable to hold the converted data
     $convertedArray = @{}
-
-    # Iterate over each key-value pair in the JSON object
     foreach ($key in $jsonObject.PSObject.Properties.Name) {
         $convertedArray[$key] = @{}
         foreach ($subKey in $jsonObject.$key.PSObject.Properties.Name) {
             $convertedArray[$key][$subKey] = $jsonObject.$key.$subKey
         }
     }
-
-    # Return the converted array
     return $convertedArray
 }
 function Get-Versions {
     $versions = @{}
-    # Read and convert the versions.json file to a PowerShell object
     $versionsPath = Join-Path $basePath "versions.json"
     $versionsItem = Get-Item -Path $versionsPath -ErrorAction SilentlyContinue
     if ($versionsItem) {
         try {
             $versions = Convert-JsonToPowershellArray -JsonFilePath $versionsPath
-            # foreach ($version in $versions_json) {
-            #     $versions[$version] = @{}
-            #     foreach ($file in $versions_json[$version]) {
-            #         $versions[$version][$file] = $versions_json[$version][$file]
-            #     }
-            # }
             Log "Read $($versions.Count) versions from $versionsPath" -level "Info"
             return $versions
         } catch {
@@ -92,7 +67,6 @@ function Get-Versions {
         }
     }
 
-    # Import the versions.ps1 file from $basePath to make the $versions array available
     $versionsPath = Join-Path $basePath "versions.ps1"
     $versionsItem = Get-Item -Path $versionsPath -ErrorAction SilentlyContinue
     if ($versionsItem) {
@@ -201,11 +175,16 @@ function Switch-GameVersion {
             Remove-Item $targetPath
         }
         Write-Debug "Symlinking $targetType $sourcePath to $targetPath"
-        if ($targetIsFolder) {
-            New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath -Force
-        } else {
-            New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath
+
+        $mkargs = if ($targetIsFolder) { "/D" } else { "" }
+        $mkargs += " ""$targetPath"" ""$sourcePath"""
+        Log "mklink $mkargs" -level "Debug"
+        $process = Start-Process -FilePath "mklink" -ArgumentList $mkargs -NoNewWindow -PassThru -Wait
+        if ($process.ExitCode -ne 0) {
+            Write-Error "Error: Failed to create symlink for $targetPath to $sourcePath" -level "Error"
+            return $false
         }
+        # New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath -Force
     }
     Log "Switched to version $version." -level "Success"
 }
