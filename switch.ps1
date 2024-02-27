@@ -6,7 +6,7 @@ param(
     [switch]$ignoreRunning = $false,
     [switch]$startGame = $false,
     [string]$gameExe = "iw4x.exe",
-    [string]$gameArgs = "",
+    [string]$gameArgs = "-disable-notifies -unprotect-dvars -multiplayer -scriptablehttp -console -nointro +set logfile 0",
     [string]$basePath = (Get-Location).Path,
     [switch]$debug = $false,
     [switch]$help
