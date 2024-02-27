@@ -165,13 +165,15 @@ if ($help) {
     $success = Switch-GameVersion -version $version
 } elseif ($args.Count -gt  0) {
     # If arguments are provided, use the first one as the version
-    $success = Switch-GameVersion -version $args[0]
+    $version = $args[0]
+    $success = Switch-GameVersion -version $version
 } else {
     # If no arguments, prompt the user to select a version
     List-Versions
     $userInput = Read-Host "Version"
     if ($userInput -ne "") {
-        $success = Switch-GameVersion -version $userInput
+        $version = $userInput
+        $success = Switch-GameVersion -version $version
     } else { Log "No version selected." -level "Error" }
 }
 if (-not $success) {
