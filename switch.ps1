@@ -8,7 +8,7 @@
     [string]$gameExe = "iw4x.exe",
     [string]$gameArgs = "-disable-notifies -unprotect-dvars -multiplayer -scriptablehttp -console -nointro +set logfile 0",
     [string]$basePath = (Get-Location).Path,
-    [switch]$debug = $true,
+    [switch]$debug = $false,
     [switch]$help
 )
 
@@ -104,7 +104,7 @@ function Get-Current-Version {
             $sourcePath = $targetItem.Target
             $sourceVersion = $sourcePath -split "_" | Select-Object -Last 1
             $sourceVersion = $sourceVersion -split "\." | Select-Object -First 1
-            Write-Debug "Found symlink for $firstItem ($targetItem): $sourceVersion ($sourcePath)"
+            Log "Found symlink for $firstItem ($targetItem): $sourceVersion ($sourcePath)" -level "Debug"
             if (-not $sourceVersion -eq "") {
                 $currentVersion = $sourceVersion
             }
@@ -123,8 +123,47 @@ function Kill-Game {
         Start-Sleep -Seconds 1
     }
 }
+function Create-Symlink {
+    param(
+        [string]$sourcePath,
+        [string]$targetPath
+    )
+    $targetIsFolder = $targetPath -notmatch "\."
+    $targetType = if ($targetIsFolder) { "folder" } else { "file" }
+    $sourceItem = Get-Item -Path $sourcePath -ErrorAction SilentlyContinue
+    if (-not $sourceItem) {
+        Log "Source $sourcePath does not exist." -level "Error"
+        return $false
+    }
+    if ($sourceItem.LinkType -eq "SymbolicLink") {
+        Log "Source $sourcePath is already a symlink." -level "Error"
+        return $false
+    }
+    $targetItem = Get-Item -Path $targetPath -ErrorAction SilentlyContinue
+    $goodTarget = if ($targetItem) { $targetItem.LinkType -eq "SymbolicLink" } else { $true }
+    if (-not $goodTarget) {
+        Log "Target $targetPath exists, but is not a symlink." -level "Error"
+        return $false
+    }
+    if ($targetItem) {
+        Log "Removing old target $targetPath"
+        Remove-Item $targetPath
+    }
+    Log "Symlinking $targetType $sourcePath to $targetPath"
 
-# Function to switch to a specified version
+    # New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath -Force
+    $mkargs = "/c mklink"
+    $mkargs += if ($targetIsFolder) { " /D" } else { "" }
+    $mkargs += " ""$targetPath"" ""$sourcePath"""
+    Log "cmd $mkargs" -level "Debug"
+    $process = Start-Process -FilePath "cmd" -ArgumentList $mkargs -NoNewWindow -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        Log "Failed to create symlink from $sourcePath to $targetPathh" -level "Error"
+        return $false
+    }
+    return $true
+}
+
 function Switch-GameVersion {
     param(
         [string]$version
@@ -155,38 +194,16 @@ function Switch-GameVersion {
         return $true
     }
     if (-not $switch) {
-        Write-Warning "Switching is disabled by ""-switch false""." -level "Error"
+        Log "Switching is disabled by ""-switch false""." -level "Error"
         return $false
     }
     foreach ($target in $versions[$version].Keys) {
         $targetPath = Join-Path $basePath $target
-        $targetIsFolder = $targetPath -notmatch "\."
-        $targetType = if ($targetIsFolder) { "folder" } else { "file" }
         $sourcePath = Join-Path $basePath $versions[$version][$target]
-        $targetItem = Get-Item -Path $targetPath -ErrorAction SilentlyContinue
-        $goodTarget = if ($targetItem) { $targetItem.LinkType -eq "SymbolicLink" } else { $true }
-
-        if (-not $goodTarget) {
-            Write-Error "Error: $targetPath exists, but is not a symlink." -level "Error"
-            return $false
-        }
-        if ($targetItem) {
-            Write-Debug "Removing old symlink $targetPath"
-            Remove-Item $targetPath
-        }
-        Write-Debug "Symlinking $targetType $sourcePath to $targetPath"
-
-        $mkargs = if ($targetIsFolder) { "/D" } else { "" }
-        $mkargs += " ""$targetPath"" ""$sourcePath"""
-        Log "mklink $mkargs" -level "Debug"
-        $process = Start-Process -FilePath "mklink" -ArgumentList $mkargs -NoNewWindow -PassThru -Wait
-        if ($process.ExitCode -ne 0) {
-            Write-Error "Error: Failed to create symlink for $targetPath to $sourcePath" -level "Error"
-            return $false
-        }
-        # New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath -Force
+        Create-Symlink -sourcePath $sourcePath -targetPath $targetPath
     }
     Log "Switched to version $version." -level "Success"
+    return $true
 }
 
 Log "Script: ""$scriptPath"" $argStr $args" -level "Debug"
