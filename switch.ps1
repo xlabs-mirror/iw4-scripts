@@ -39,28 +39,32 @@ $versions = @{
 
 $gameProcessName = $gameExe -split "\." | Select-Object -First 1
 $success = $false
-$scriptArgs = $args
+$scriptArgs = $MyInvocation.BoundParameters
+$scriptPath = $MyInvocation.MyCommand.Path
+$scriptName = $MyInvocation.MyCommand.Name
 
+function Log {
+    param(
+        [string]$message,
+        [string]$level = "Info"
+    )
+    # $message = "$($scriptName): $message"
+    switch ($level.ToLower()) {
+        "warn" { Write-Warning "[$(Get-Date)] Warning: $message" }
+        "warning" { Write-Warning "[$(Get-Date)] Warning: $message" }
+        "error" { Write-Host "[$(Get-Date)] Error: $message" -ForegroundColor Red}
+        "debug" { Write-Debug "[$(Get-Date)] $message" }
+        "success" { Write-Host "[$(Get-Date)] ✅ $message" -ForegroundColor Green }
+        default { Write-Host "[$(Get-Date)] $message" }
+    }
+}
 function List-Versions {
-    Write-Host "Available versions:"
-    $versions.Keys | ForEach-Object { Write-Host " - $_" }
+    Log "Available versions:"
+    $versions.Keys | ForEach-Object { Log " - $_" }
 }
 
 function Show-Help {
-    $params = $scriptArgs
-    $paramlist = $()
-    foreach ($param in $params.Keys) {
-        $paramType = $params[$param].ParameterType.Name
-        $paramstr = "[-$param] <$paramType>"
-        Write-Host "Param: $param, Type: $paramType"
-        $paramlist += " $paramstr"
-    }
-    $paramstr = $paramlist -join " "
-    Write-Host "Usage: switch.ps1 $paramstr"
-    foreach ($param in $params.Keys) {
-        $paramType = $params[$param].ParameterType.Name
-        Write-Host "  -$param <$paramType>    $($params[$param].Attributes[0].NamedArguments.Value[0].TypedValue.Value)"
-    }
+    Invoke-Expression "Get-Help ""$scriptPath"" -detailed"
 }
 
 function Get-Current-Version {
@@ -72,6 +76,7 @@ function Get-Current-Version {
         if ($targetItem) {
             $sourcePath = $targetItem.Target
             $sourceVersion = $sourcePath -split "_" | Select-Object -Last 1
+            $sourceVersion = $sourceVersion -split "\." | Select-Object -First 1
             Write-Debug "Found symlink for $firstItem ($targetItem): $sourceVersion ($sourcePath)"
             if (-not $sourceVersion -eq "") {
                 $currentVersion = $sourceVersion
@@ -92,13 +97,13 @@ function Switch-GameVersion {
         $runningProcesses = Get-Process | Where-Object { $_.ProcessName -eq $gameProcessName }
         if ($runningProcesses.Count -gt 0) {
             if ($killGame) {
-                Write-Host "Killing $gameProcessName..."
+                Log "Killing $gameProcessName..." -level "Warning"
                 Stop-Process -Name $gameProcessName
             } else {
-                Write-Host "Error: $gameExe is running. Please close it before switching versions or use -killGame to close it automatically."
+                Log "Error: $gameExe is running. Please close it before switching versions or use -killGame to close it automatically."
                 $userInput = Read-Host "Kill $gameExe? (y/n)"
                 if ($userInput -eq "y") {
-                    Write-Host "Killing $gameProcessName..."
+                    Log "Killing $gameProcessName..." -level "Warning"
                     Stop-Process -Name $gameProcessName
                 } else {
                     return $false
@@ -107,16 +112,16 @@ function Switch-GameVersion {
         }
     }
     if (-not $versions.ContainsKey($version)) {
-        Write-Host "Version $version does not exist."
+        Log "Version $version does not exist."
         List-Versions
         return $false
     }
     if ($currentVersion -eq $version -and -not $force) {
-        Write-Host "Already on version $version."
+        Log "Already on version $version."
         return $true
     }
     if (-not $switch) {
-        Write-Warning "Switching is disabled by ""-switch false""."
+        Write-Warning "Switching is disabled by ""-switch false""." -level "Error"
         return $false
     }
     foreach ($target in $versions[$version]["replacements"].Keys) {
@@ -128,7 +133,7 @@ function Switch-GameVersion {
         $goodTarget = if ($targetItem) { $targetItem.LinkType -eq "SymbolicLink" } else { $true }
 
         if (-not $goodTarget) {
-            Write-Error "Error: $targetPath exists, but is not a symlink."
+            Write-Error "Error: $targetPath exists, but is not a symlink." -level "Error"
             return $false
         }
         if ($targetItem) {
@@ -142,10 +147,16 @@ function Switch-GameVersion {
             New-Item -ItemType SymbolicLink -Path $targetPath -Target $sourcePath
         }
     }
-    Write-Host "Switched to version $version."
+    Log "Switched to version $version." -level "Success"
 }
-
-Write-Host "Current version: $currentVersion"
+$argStr = $scriptArgs.GetEnumerator() | ForEach-Object { "-$($_.Key) ""$($_.Value)""" } | ForEach-Object { $_ -join " " }
+Log """$scriptPath"" $argStr"
+Log "Base Path: $basePath"
+if ($currentVersion -eq "Unknown") {
+    Log "Detected game version: $currentVersion" -level "Warning"
+} else {
+    Log "Detected game version: $currentVersion" -level "Success"
+}
 if ($help) {
     Show-Help
     return
@@ -161,10 +172,10 @@ if ($help) {
     $userInput = Read-Host "Version"
     if ($userInput -ne "") {
         $success = Switch-GameVersion -version $userInput
-    } else { Write-Host "No version selected." }
+    } else { Log "No version selected." -level "Error" }
 }
 if (-not $success) {
-    Write-Host "Failed to switch to version $version."
+    Log "Failed to switch to version $version." -level "Error"
 } else {
     if ($startGame) {
         $filePath = Join-Path $basePath $gameExe
