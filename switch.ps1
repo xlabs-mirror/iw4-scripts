@@ -12,32 +12,8 @@ param(
     [switch]$help
 )
 
-$versions = @{
-    "r4500" = @{
-        "replacements" = @{
-            "iw4x.dll" = "iw4x_r4500.dll"
-            # "iw4x" = "iw4x_r4500" # folder
-        }
-    }
-    "r4499" = @{
-        "replacements" = @{
-            "iw4x.dll" = "iw4x_r4499.dll"
-            # "iw4x" = "iw4x_r4499" # folder
-        }
-    }
-    "r4432" = @{
-        "replacements" = @{
-            "iw4x.dll" = "iw4x_r4432.dll"
-            # "iw4x" = "iw4x_r4432" # folder
-        }
-    }
-    "072" = @{
-        "replacements" = @{
-            "iw4x.dll" = "iw4x_072.dll"
-            "iw4x" = "iw4x_072" # folder
-        }
-    }
-}
+# Import the versions.ps1 file from $basePath to make the $versions array available
+. "$basePath\versions.ps1"
 
 $gameProcessName = $gameExe -split "\." | Select-Object -First 1
 $success = $false
