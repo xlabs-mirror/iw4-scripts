@@ -1,12 +1,14 @@
 param(
     [string]$version = "",
     [bool]$switch = $true,
-    [bool]$force = $false,
-    [bool]$killGame = $false,
-    [bool]$ignoreRunning = $false,
-    [bool]$startGame = $false,
+    [switch]$force = $false,
+    [switch]$killGame = $false,
+    [switch]$ignoreRunning = $false,
+    [switch]$startGame = $false,
     [string]$gameExe = "iw4x.exe",
+    [string]$gameArgs = "",
     [string]$basePath = (Get-Location).Path,
+    [switch]$debug = $false,
     [switch]$help
 )
 
@@ -40,8 +42,10 @@ $versions = @{
 $gameProcessName = $gameExe -split "\." | Select-Object -First 1
 $success = $false
 $scriptArgs = $MyInvocation.BoundParameters
+$argStr = $scriptArgs.GetEnumerator() | ForEach-Object { "-$($_.Key) ""$($_.Value)""" } | ForEach-Object { $_ -join " " }
 $scriptPath = $MyInvocation.MyCommand.Path
-$scriptName = $MyInvocation.MyCommand.Name
+# $scriptName = $MyInvocation.MyCommand.Name
+$gamePath = Join-Path $basePath $gameExe
 
 function Log {
     param(
@@ -53,7 +57,7 @@ function Log {
         "warn" { Write-Warning "[$(Get-Date)] Warning: $message" }
         "warning" { Write-Warning "[$(Get-Date)] Warning: $message" }
         "error" { Write-Host "[$(Get-Date)] Error: $message" -ForegroundColor Red}
-        "debug" { Write-Debug "[$(Get-Date)] $message" }
+        "debug" { if ($debug) { Write-Host "[$(Get-Date)] $message" -ForegroundColor Gray } }
         "success" { Write-Host "[$(Get-Date)] ✅ $message" -ForegroundColor Green }
         default { Write-Host "[$(Get-Date)] $message" }
     }
@@ -88,6 +92,15 @@ function Get-Current-Version {
 }
 $currentVersion = Get-Current-Version
 
+function Kill-Game {
+    $runningProcesses = Get-Process | Where-Object { $_.ProcessName -eq $gameProcessName }
+    if ($runningProcesses.Count -gt 0) {
+        Log "Killing $gameProcessName..." -level "Warning"
+        Stop-Process -Name $gameProcessName
+        Start-Sleep -Seconds 1
+    }
+}
+
 # Function to switch to a specified version
 function Switch-GameVersion {
     param(
@@ -97,14 +110,12 @@ function Switch-GameVersion {
         $runningProcesses = Get-Process | Where-Object { $_.ProcessName -eq $gameProcessName }
         if ($runningProcesses.Count -gt 0) {
             if ($killGame) {
-                Log "Killing $gameProcessName..." -level "Warning"
-                Stop-Process -Name $gameProcessName
+                Kill-Game
             } else {
                 Log "Error: $gameExe is running. Please close it before switching versions or use -killGame to close it automatically."
                 $userInput = Read-Host "Kill $gameExe? (y/n)"
                 if ($userInput -eq "y") {
-                    Log "Killing $gameProcessName..." -level "Warning"
-                    Stop-Process -Name $gameProcessName
+                    Kill-Game
                 } else {
                     return $false
                 }
@@ -149,9 +160,10 @@ function Switch-GameVersion {
     }
     Log "Switched to version $version." -level "Success"
 }
-$argStr = $scriptArgs.GetEnumerator() | ForEach-Object { "-$($_.Key) ""$($_.Value)""" } | ForEach-Object { $_ -join " " }
-Log """$scriptPath"" $argStr"
-Log "Base Path: $basePath"
+
+Log "Script: ""$scriptPath"" $argStr $args" -level "Debug"
+Log "Game: ""$gamePath"" $gameArgs" -level "Debug"
+Log "Path: $basePath" -level "Debug"
 if ($currentVersion -eq "Unknown") {
     Log "Detected game version: $currentVersion" -level "Warning"
 } else {
@@ -163,7 +175,7 @@ if ($help) {
 } elseif ($version -ne "") {
     # If version is provided as an argument, use it
     $success = Switch-GameVersion -version $version
-} elseif ($args.Count -gt  0) {
+} elseif ($args.Count -eq 1 -and $args[0] -ne "") {
     # If arguments are provided, use the first one as the version
     $version = $args[0]
     $success = Switch-GameVersion -version $version
@@ -180,7 +192,7 @@ if (-not $success) {
     Log "Failed to switch to version $version." -level "Error"
 } else {
     if ($startGame) {
-        $filePath = Join-Path $basePath $gameExe
-        Start-Process -FilePath $filePath
+        Log "Starting $gameExe $gameArgs"
+        Start-Process -FilePath $gamePath -ArgumentList $gameArgs
     }
 }
